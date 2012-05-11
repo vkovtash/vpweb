@@ -1,0 +1,4 @@
+cron:
+- description: updateshows
+  url: /updateshows
+  schedule: every 1 hours
