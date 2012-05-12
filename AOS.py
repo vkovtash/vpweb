@@ -4,7 +4,27 @@
 from dbmodel import *
 import downloader,re,json,hashlib
 
-class showGetter():
+class EpisodeList(dict):
+    def __init__(self,*args):
+        dict.__init__(self, args)
+
+    def append(self,episodeNumber,episodeURL):
+        if episodeNumber is not None:
+            dict.__setitem__(self, str(episodeNumber), episodeURL)
+
+    def remove(self,episodeNumber):
+        if episodeNumber is not None:
+            try:
+                dict.pop(self, str(episodeNumber))
+            except KeyError:
+                pass
+
+    @property
+    def episodeNumbers(self):
+        return dict.keys(self)
+
+
+class ShowGetter():
     def __init__(self,showURL):
         self._showURL=showURL
         self._showPage=None
@@ -27,7 +47,7 @@ class showGetter():
 
         return showTitle
 
-
+    @property
     def showPage(self):
         if self._showPage is None:
             self._showPage=self.__getShowPage()
@@ -35,11 +55,12 @@ class showGetter():
                 self._showPage=None
         return self._showPage
 
+    @property
     def showTitle(self):
         if self._showTitle is not None:
             return self._showTitle
 
-        showRawTitle="".join(self.showPage().data.xpath('//div[@id="dle-content"]/div[@class="new_"]/div[@class="head_"]/a/descendant::text()'))
+        showRawTitle="".join(self.showPage.data.xpath('//div[@id="dle-content"]/div[@class="new_"]/div[@class="head_"]/a/descendant::text()'))
         #Приводим название в человеческий вид
         titles=showRawTitle.split(" / ")
 
@@ -52,26 +73,30 @@ class showGetter():
         self._showTitle=result
         return result
 
+    @property
     def showPoster(self):
         if self._showPoster is not None:
             return self._showPoster
 
         try:
-            result="".join(self.showPage().data.xpath('//div[@id="dle-content"]//div[@class="img_"]//img')[0].get('src'))
+            result="".join(["http://animeonline.su/",self.showPage.data.xpath('//div[@id="dle-content"]//div[@class="img_"]//img')[0].get('src')])
         except IndexError:
             result=None
 
         self._showPoster=result
         return result
 
+    @property
     def showSeason(self):
-        m=re.search(u'\[ТВ-([0-9]).*\]',self.showTitle())
+        showRawTitle="".join(self.showPage.data.xpath('//div[@id="dle-content"]/div[@class="new_"]/div[@class="head_"]/a/descendant::text()'))
+        m=re.search(u'\[ТВ-([0-9]).*\]',showRawTitle)
         #print title
         if m is not None:
             return m.group(1)
         else:
             return "1"
 
+    @property
     def showEpisodes(self):
         """
         Return dictionary in format
@@ -82,7 +107,7 @@ class showGetter():
         if self._showEpisodes is not None:
             return self._showEpisodes
 
-        result={}
+        result=EpisodeList()
 
 
         aosKey1 = {
@@ -99,7 +124,7 @@ class showGetter():
         playlistURLStart='var playlist = "'
         playlistURLEnd='";'
 
-        playlistRawURL="".join(self.showPage().data.xpath('//div[@id="dle-content"]/script/descendant::text()'))
+        playlistRawURL="".join(self.showPage.data.xpath('//div[@id="dle-content"]/script/descendant::text()'))
 
         playlistURLStartIndex=playlistRawURL.find(playlistURLStart)
         if playlistURLStartIndex>0:
@@ -135,13 +160,9 @@ class showGetter():
             #Загрузка плэйлиста в словарь
             playlist=json.loads(playlistData)
 
-            showEpisodes={}
             for episode in playlist["playlist"]:
+                result.append(episodeNumber=playlist["playlist"].index(episode)+1,episodeURL=episode["file"])
 
-                sq_num=playlist["playlist"].index(episode)+1 #Порядок записи в плэйлисте (в данном случае это номер эпизода)
-                showEpisodes[str(sq_num)]=episode["file"] #Записывается url эпизода
-
-            result=showEpisodes
             self._showEpisodes=result
 
         return result
@@ -180,11 +201,6 @@ class showGetter():
 
         return result
 
-
-
-
-
-
 class Service():
     def __init__(self):
         self.serviceName="animeonline.su"
@@ -196,28 +212,41 @@ class Service():
         #TODO: сделать возможность регитсрации новых обработчиков и в цикле проходить по всем обработчикам
 
         #Получаем список закладок
-        query = Show.all()
+        query = ShowDB.all()
         query.filter('service =',self.serviceName)
 
         for show in query.fetch(1000):
 
             #Получаем интересующую страницу
-            showPage=showGetter(show.url)
+            showPage=ShowGetter(show.url)
 
             #Если не удалось получить страницу, перейти к слеующей
-            if showPage.showPage() is None:
+            if showPage.showPage is None:
                 continue
 
-            showData={'title':showPage.showTitle(),'season':showPage.showSeason(),'poster_url':showPage.showPoster(),'episodes':showPage.showEpisodes()}
+            showData={'title':showPage.showTitle,'season':showPage.showSeason,'posterURL':showPage.showPoster,'episodes':showPage.showEpisodes}
 
             showDataJSON=json.dumps(showData)
 
             hash=hashlib.md5()
             hash.update(showDataJSON)
             showDataChecksum=hash.hexdigest()
-
             if show.checksum!=showDataChecksum:
                 show.checksum=showDataChecksum
                 show.data=showDataJSON
-                show.episode_count=len(showPage.showEpisodes())
+                show.episodeCount=len(showPage.showEpisodes)
                 show.put()
+
+
+
+
+if __name__ == "__main__":
+    testPage=ShowGetter("http://animeonline.su/anime-sub/tv-sub/7084-kartochnye-boi-avangarda-tv-2-cardfight-vanguard-asia-circuit-hen.html")
+    showData={'title':testPage.showTitle,'season':testPage.showSeason,'posterURL':testPage.showPoster,'episodes':testPage.showEpisodes}
+
+    print testPage.showTitle
+    print testPage.showSeason
+    print testPage.showPoster
+    print testPage.showEpisodes
+    print testPage.showEpisodes.episodeNumbers
+    print json.dumps(showData)
