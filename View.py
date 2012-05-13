@@ -6,11 +6,13 @@ from google.appengine.ext import webapp
 
 import Model
 from AOSShowFetcher import AOSShowFetcher
+from SORGShowFetcher import SORGShowFetcher
 import json,logging
 
 userName="aluzar"
 Service=Model.Service()
-Service.showFetchers=[AOSShowFetcher]
+Service.showFetchers=[AOSShowFetcher,
+                      SORGShowFetcher]
 
 class AddShow(webapp.RequestHandler):
     def get(self):

@@ -193,6 +193,7 @@ class Subscription():
 
             if showData.data is not None:
                 showResult={'showKey':show.key.urlsafe(),
+                            'serviceName':showData.service,
                             'title':showData.data["title"],
                             'season':showData.data["season"],
                             'posterURL':showData.data["posterURL"],

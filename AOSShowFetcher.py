@@ -118,8 +118,6 @@ class AOSShowFetcher(ShowFetcher):
             for episode in playlist["playlist"]:
                 result.append(episodeNumber=playlist["playlist"].index(episode)+1,episodeURL=episode["file"])
 
-
-
         #=======================================================
         self._showEpisodes=result
         return result
