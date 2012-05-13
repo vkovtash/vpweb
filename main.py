@@ -16,16 +16,13 @@
 #
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
-from app_jobs import AddShow
-from app_jobs import UpdateShowsJob
-from app_jobs import MainHandler
-from app_jobs import GetNewEpisodesNDB
+from View import *
 
 def main():
     application = webapp.WSGIApplication([  ('/',MainHandler),
     										('/addbookmark',AddShow),
     										('/updateshows',UpdateShowsJob),
-    										('/getnewepisodes',GetNewEpisodesNDB)],
+    										('/getnewepisodes',UserNewEpisodes)],
                                          debug=True)
     util.run_wsgi_app(application)
 

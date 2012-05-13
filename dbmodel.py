@@ -13,15 +13,9 @@ def genHash(value):
 class ShowNDB(ndb.Model):
     url = ndb.StringProperty()
     version = ndb.IntegerProperty(default=0)
-    service = ndb.ComputedProperty(lambda self: self.serviceName())
+    service = ndb.StringProperty()
     data = ndb.JsonProperty()
     hash = ndb.StringProperty()
-
-    def serviceName(self):
-        if self.url is not None:
-            return urlparse(self.url).netloc
-        else:
-            return None
 
 class UsersWatchListNDB(ndb.Model):
     user = ndb.StringProperty()

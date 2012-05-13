@@ -1,68 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#TODO:Попробовать использовать NDB для хранения данных, вроде вкусная штука с автоматическим кешированием
+import downloader,re
+from Model import *
 
-from dbmodel import *
-import downloader,re,json,hashlib
-import logging
-
-class EpisodeList(dict):
-    def __init__(self,*args):
-        dict.__init__(self, args)
-
-    def append(self,episodeNumber,episodeURL):
-        if episodeNumber is not None:
-            dict.__setitem__(self, str(episodeNumber), episodeURL)
-
-    def remove(self,episodeNumber):
-        if episodeNumber is not None:
-            try:
-                dict.pop(self, str(episodeNumber))
-            except KeyError:
-                pass
-
-    @property
-    def episodeNumbers(self):
-        return dict.keys(self)
-
-
-class ShowGetter():
-    def __init__(self,showURL):
-        self._showURL=showURL
-        self._showPage=None
-        self._showEpisodes=None
-        self._showTitle=None
-        self._showPoster=None
-
-    def __getShowPage(self):
-        return downloader.HTMLDocGet(self._showURL)
-
-    def __normalizeTitle(self,title=""):
-
-        showTitle=title.replace(":","")
-        showTitle=showTitle.replace(";","")
-        showTitle=showTitle.replace(",","")
-        showTitle=showTitle.replace(".","")
-        showTitle=showTitle.replace("_"," ")
-        showTitle=re.sub(" +"," ",showTitle)
-        showTitle=showTitle.strip()
-
-        return showTitle
-
-    @property
-    def showPage(self):
-        if self._showPage is None:
-            self._showPage=self.__getShowPage()
-            if self._showPage.data is None:
-                self._showPage=None
-        return self._showPage
+class AOSShowFetcher(ShowFetcher):
+    showService=["animeonline.su"]
 
     @property
     def showTitle(self):
         if self._showTitle is not None:
             return self._showTitle
 
+        #=================Add your code here====================
         showRawTitle="".join(self.showPage.data.xpath('//div[@id="dle-content"]/div[@class="new_"]/div[@class="head_"]/a/descendant::text()'))
         #Приводим название в человеческий вид
         titles=showRawTitle.split(" / ")
@@ -71,8 +21,8 @@ class ShowGetter():
         showTitle=re.sub("\[.*\]","",showTitle)
         showTitle=re.sub("\(.*\)","",showTitle)
 
-        result=self.__normalizeTitle(showTitle)
-
+        #=======================================================
+        result=self.normalizeTitle(showTitle)
         self._showTitle=result
         return result
 
@@ -81,36 +31,38 @@ class ShowGetter():
         if self._showPoster is not None:
             return self._showPoster
 
+        result=""
+        #=================Add your code here====================
         try:
             result="".join(["http://animeonline.su/",self.showPage.data.xpath('//div[@id="dle-content"]//div[@class="img_"]//img')[0].get('src')])
             self._showPoster=result
         except IndexError:
-            result=""
+            pass
 
+        #=======================================================
         return result
 
     @property
     def showSeason(self):
+        result="1"
+        #=================Add your code here====================
+
         showRawTitle="".join(self.showPage.data.xpath('//div[@id="dle-content"]/div[@class="new_"]/div[@class="head_"]/a/descendant::text()'))
         m=re.search(u'\[ТВ-([0-9]).*\]',showRawTitle)
         #print title
         if m is not None:
-            return m.group(1)
-        else:
-            return "1"
+            result=m.group(1)
+
+        #=======================================================
+        return result
 
     @property
     def showEpisodes(self):
-        """
-        Return dictionary in format
-        {episodeNumber:episodeURL,...}"
-
-        example: {"1":"http://1.html","2":"http://2.html","3":"http://1.html",...}"
-        """
         if self._showEpisodes is not None:
             return self._showEpisodes
 
         result=EpisodeList()
+        #=================Add your code here====================
 
 
         aosKey1 = {
@@ -119,8 +71,8 @@ class ShowGetter():
         }
 
         aosKey2 = {
-        "codec_a":["a","H","R","c","D","v","u","W","1","l","b","5","s","w","G","9","Z","M","X","T","I","N","p","=","U","6"],
-        "codec_b":["2","i","o","3","g","L","B","x","z","4","0","m","8","V","d","J","k","t","f","Q","n","y","7","r","Y","e"]
+            "codec_a":["a","H","R","c","D","v","u","W","1","l","b","5","s","w","G","9","Z","M","X","T","I","N","p","=","U","6"],
+            "codec_b":["2","i","o","3","g","L","B","x","z","4","0","m","8","V","d","J","k","t","f","Q","n","y","7","r","Y","e"]
         }
 
         #Определяет начало и конец зашифрованного урла плэйлиста
@@ -139,10 +91,10 @@ class ShowGetter():
                 #Encrypted playlist
 
                 #Try first key
-                playlistRequestURL=self.__decryptPlaylistURL(aosKey1,playlistURL)
+                playlistRequestURL=self.decryptPlaylistURL(aosKey1,playlistURL)
                 if not len(playlistRequestURL):
                     #Try second key
-                    playlistRequestURL=self.__decryptPlaylistURL(aosKey2,playlistURL)
+                    playlistRequestURL=self.decryptPlaylistURL(aosKey2,playlistURL)
 
             #Return an empty episodes set when playlistURL not found
             if not len(playlistRequestURL):
@@ -166,11 +118,13 @@ class ShowGetter():
             for episode in playlist["playlist"]:
                 result.append(episodeNumber=playlist["playlist"].index(episode)+1,episodeURL=episode["file"])
 
-            self._showEpisodes=result
 
+
+        #=======================================================
+        self._showEpisodes=result
         return result
 
-    def __decryptPlaylistURL(self,key,secretText):
+    def decryptPlaylistURL(self,key,secretText):
 
         lg27 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
         result=""
@@ -203,34 +157,3 @@ class ShowGetter():
                     result+=chr(workingArray2[z])
 
         return result
-
-class Service():
-    def __init__(self):
-        self.serviceName="animeonline.su"
-
-    def updateShows(self):
-        """
-        asd
-        """
-        #TODO: сделать возможность регитсрации новых обработчиков и в цикле проходить по всем обработчикам
-
-        #Получаем список закладок
-
-        ndbQuery = ShowNDB.query(ShowNDB.service==self.serviceName)
-        ndbShows = ndbQuery.fetch(1000)
-
-        showsToPut=[]
-        for ndbShow in ndbShows:
-            showPage=ShowGetter(ndbShow.url)
-
-            if showPage.showPage is not None:
-                ndbShow.data={'title':showPage.showTitle,'season':showPage.showSeason,'posterURL':showPage.showPoster,'episodes':showPage.showEpisodes}
-                dataHash=genHash(str(ndbShow.data))
-                if ndbShow.hash != dataHash:
-                    ndbShow.hash=dataHash
-                    showsToPut.append(ndbShow)
-
-        ndb.put_multi(showsToPut)
-
-if __name__ == "__main__":
-    pass
