@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+#TODO:Попробовать использовать NDB для хранения данных, вроде вкусная штука с автоматическим кешированием
+
 from dbmodel import *
 import downloader,re,json,hashlib
 import logging
@@ -81,10 +83,10 @@ class ShowGetter():
 
         try:
             result="".join(["http://animeonline.su/",self.showPage.data.xpath('//div[@id="dle-content"]//div[@class="img_"]//img')[0].get('src')])
+            self._showPoster=result
         except IndexError:
-            result=None
+            result=""
 
-        self._showPoster=result
         return result
 
     @property
@@ -213,29 +215,22 @@ class Service():
         #TODO: сделать возможность регитсрации новых обработчиков и в цикле проходить по всем обработчикам
 
         #Получаем список закладок
-        query = db.Query(ShowDB,keys_only=True)
-        query.filter('service =',self.serviceName)
 
-        for show in query.fetch(1000):
-            dbShow=Show(show)
+        ndbQuery = ShowNDB.query(ShowNDB.service==self.serviceName)
+        ndbShows = ndbQuery.fetch(1000)
 
-            #Получаем интересующую страницу
-            showPage=ShowGetter(dbShow.showURL)
+        showsToPut=[]
+        for ndbShow in ndbShows:
+            showPage=ShowGetter(ndbShow.url)
 
             if showPage.showPage is not None:
-                showData={'title':showPage.showTitle,'season':showPage.showSeason,'posterURL':showPage.showPoster,'episodes':showPage.showEpisodes}
-                showDataJSON=json.dumps(showData)
-                dbShow.setShowData(showDataJSON)
+                ndbShow.data={'title':showPage.showTitle,'season':showPage.showSeason,'posterURL':showPage.showPoster,'episodes':showPage.showEpisodes}
+                dataHash=genHash(str(ndbShow.data))
+                if ndbShow.hash != dataHash:
+                    ndbShow.hash=dataHash
+                    showsToPut.append(ndbShow)
 
-
+        ndb.put_multi(showsToPut)
 
 if __name__ == "__main__":
-    testPage=ShowGetter("http://animeonline.su/anime-sub/tv-sub/7084-kartochnye-boi-avangarda-tv-2-cardfight-vanguard-asia-circuit-hen.html")
-    showData={'title':testPage.showTitle,'season':testPage.showSeason,'posterURL':testPage.showPoster,'episodes':testPage.showEpisodes}
-
-    print testPage.showTitle
-    print testPage.showSeason
-    print testPage.showPoster
-    print testPage.showEpisodes
-    print testPage.showEpisodes.episodeNumbers
-    print json.dumps(showData)
+    pass

@@ -4,60 +4,73 @@
 
 from google.appengine.ext import webapp
 
+userName="aluzar"
+
 
 import AOS
 from dbmodel import *
-import json
+import json,logging
 
 class AddShow(webapp.RequestHandler):
     def get(self):
 
         url=self.request.get('u')
-        show=Show()
-        show.register(url)
 
-        if show.showKey is not None:
-            watch_list_et=UsersWatchList().get_or_insert(show.showKeyName)
-            watch_list_et.show=show.showKey
-            watch_list_et.put()
+        if genHash(url) is not None:
+            showKey=ndb.Key('ShowNDB',genHash(url))
+            if showKey.get() is None:
+                show = ShowNDB(key=showKey)
+                show.url = url
+                show.put()
+
+            subscriptionKey=ndb.Key('UsersWatchListNDB',userName,parent=showKey)
+            if subscriptionKey.get() is None:
+                subscription = UsersWatchListNDB(key=subscriptionKey)
+                subscription.user=userName
+                subscription.put()
 
     post = get
 
 class UpdateShowsJob(webapp.RequestHandler):
-	def get(self):
-		worker=AOS.Service()
-		worker.updateShows()
+    def get(self):
+        worker=AOS.Service()
+        worker.updateShows()
 
-
-class GetNewEpisodes(webapp.RequestHandler):
+class GetNewEpisodesNDB(webapp.RequestHandler):
     def get(self):
 
-        new_ep_list=[]
+        response={'response':{'shows':[]}}
 
-        for bk in UsersWatchList.all().fetch(1000):
+        for showSubscription in UsersWatchListNDB.query(UsersWatchListNDB.user==userName).fetch(1000):
 
-            if bk.show.data!=None:
-                show_data=json.loads(bk.show.data)
-            else:
-                continue
+            showData=showSubscription.key.parent().get()
 
-            if bk.data!=None:
-                bk_data=json.loads(bk.data)
-                bk_ep=set(bk_data["episodes"].keys())
-            else:
-                bk_ep=set([])
+            if showData.data is not None:
+                result={'subscription':showSubscription.key.urlsafe(),
+                        'title':showData.data["title"],
+                        'season':showData.data["season"],
+                        'posterURL':showData.data["posterURL"],
+                        'episodes':[]}
 
-            show_ep=set(show_data['episodes'].keys())
+                if showData.data is not None:
+                    showEpisodes=set(showData.data['episodes'].keys())
+                else:
+                    showEpisodes=set([])
 
-            for new_ep in (show_ep-bk_ep):
-                new_ep_list.append({'show':str(bk.show.key()),'episode':new_ep,'url':show_data['episodes'][new_ep]})
+                downloadedEpisodes=set(showSubscription.downloaded)
 
-	resp=json.dumps({'response':{'episodes':new_ep_list}})
-	self.response.out.write(resp)
+                for newEpisode in (showEpisodes-downloadedEpisodes):
+
+                    result["episodes"].append({'number':newEpisode,
+                                               'url':showData.data['episodes'][newEpisode]})
+
+                response['response']['shows'].append(result)
+
+        resp=json.dumps(response)
+        self.response.out.write(resp)
 
 class MainHandler(webapp.RequestHandler):
-	def get(self):
-		for show in ShowDB.all().fetch(1000):
-			self.response.out.write(show.data)
+    def get(self):
+        pass
 
 
