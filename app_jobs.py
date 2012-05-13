@@ -3,34 +3,25 @@
 
 
 from google.appengine.ext import webapp
-import hashlib
-from urlparse import urlparse
+
 
 import AOS
 from dbmodel import *
 import json
 
 class AddShow(webapp.RequestHandler):
-	def get(self):
+    def get(self):
 
-		#title=self.request.get('t')
-		url=self.request.get('u')
-		service=urlparse(url).netloc
+        url=self.request.get('u')
+        show=Show()
+        show.register(url)
 
-		hash=hashlib.md5()
-		hash.update(url)
-		key=hash.hexdigest()
+        if show.showKey is not None:
+            watch_list_et=UsersWatchList().get_or_insert(show.showKeyName)
+            watch_list_et.show=show.showKey
+            watch_list_et.put()
 
-		bookmark=ShowDB.get_or_insert(key)
-		bookmark.url=url
-		bookmark.service=service
-		bookmark.put()
-
-		watch_list_et=TestWatchList()
-		watch_list_et.show=bookmark.key()
-		watch_list_et.put()
-
-	post = get
+    post = get
 
 class UpdateShowsJob(webapp.RequestHandler):
 	def get(self):
@@ -43,7 +34,7 @@ class GetNewEpisodes(webapp.RequestHandler):
 
         new_ep_list=[]
 
-        for bk in TestWatchList.all().fetch(1000):
+        for bk in UsersWatchList.all().fetch(1000):
 
             if bk.show.data!=None:
                 show_data=json.loads(bk.show.data)

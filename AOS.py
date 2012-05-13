@@ -3,6 +3,7 @@
 
 from dbmodel import *
 import downloader,re,json,hashlib
+import logging
 
 class EpisodeList(dict):
     def __init__(self,*args):
@@ -212,31 +213,19 @@ class Service():
         #TODO: сделать возможность регитсрации новых обработчиков и в цикле проходить по всем обработчикам
 
         #Получаем список закладок
-        query = ShowDB.all()
+        query = db.Query(ShowDB,keys_only=True)
         query.filter('service =',self.serviceName)
 
         for show in query.fetch(1000):
+            dbShow=Show(show)
 
             #Получаем интересующую страницу
-            showPage=ShowGetter(show.url)
+            showPage=ShowGetter(dbShow.showURL)
 
-            #Если не удалось получить страницу, перейти к слеующей
-            if showPage.showPage is None:
-                continue
-
-            showData={'title':showPage.showTitle,'season':showPage.showSeason,'posterURL':showPage.showPoster,'episodes':showPage.showEpisodes}
-
-            showDataJSON=json.dumps(showData)
-
-            hash=hashlib.md5()
-            hash.update(showDataJSON)
-            showDataChecksum=hash.hexdigest()
-            if show.checksum!=showDataChecksum:
-                show.checksum=showDataChecksum
-                show.data=showDataJSON
-                show.episodeCount=len(showPage.showEpisodes)
-                show.put()
-
+            if showPage.showPage is not None:
+                showData={'title':showPage.showTitle,'season':showPage.showSeason,'posterURL':showPage.showPoster,'episodes':showPage.showEpisodes}
+                showDataJSON=json.dumps(showData)
+                dbShow.setShowData(showDataJSON)
 
 
 
