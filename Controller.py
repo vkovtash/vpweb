@@ -3,10 +3,9 @@
 
 from google.appengine.ext import webapp
 
-import Model
+import Model, json
 from AOSShowFetcher import AOSShowFetcher
 from SORGShowFetcher import SORGShowFetcher
-import json,logging
 
 userName="aluzar"
 Service=Model.Service([AOSShowFetcher,

@@ -3,7 +3,7 @@
 
 
 from Model import *
-import json,re,logging
+import json,re
 
 class SORGShowFetcher(ShowFetcher):
     showService=["serialsonline.org"]

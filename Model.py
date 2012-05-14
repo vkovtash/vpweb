@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from DbModel import *
-import downloader,re,json,hashlib
+import downloader,re,hashlib
 import logging
 
 
