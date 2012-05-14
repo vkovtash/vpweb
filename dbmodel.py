@@ -5,11 +5,6 @@ from google.appengine.ext import ndb
 import hashlib
 from urlparse import urlparse
 
-def genHash(value):
-    hash=hashlib.md5()
-    hash.update(value)
-    return hash.hexdigest()
-
 class ShowNDB(ndb.Model):
     url = ndb.StringProperty()
     version = ndb.IntegerProperty(default=0)
