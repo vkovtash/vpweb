@@ -4,13 +4,13 @@
 
 from google.appengine.ext import webapp
 
-import Model
+import Controller
 from AOSShowFetcher import AOSShowFetcher
 from SORGShowFetcher import SORGShowFetcher
 import json,logging
 
 userName="aluzar"
-Service=Model.Service()
+Service=Controller.Service()
 Service.showFetchers=[AOSShowFetcher,
                       SORGShowFetcher]
 
@@ -21,7 +21,7 @@ class AddShow(webapp.RequestHandler):
 
         showKey=Service.registerShow(url)
 
-        userSubscription=Model.Subscription(userName)
+        userSubscription=Controller.Subscription(userName)
         userSubscription.subscribeByShowKey(showKey)
 
     post = get
@@ -32,7 +32,7 @@ class UpdateShowsJob(webapp.RequestHandler):
 
 class UserNewEpisodes(webapp.RequestHandler):
     def get(self):
-        userSubscription=Model.Subscription(userName)
+        userSubscription=Controller.Subscription(userName)
         responseShows=json.dumps(userSubscription.newEpisodes)
         response={'response':responseShows}
         self.response.out.write(response)
