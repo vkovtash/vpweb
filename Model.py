@@ -158,7 +158,7 @@ class Service():
                     showData={'title':showPage.showTitle,'season':showPage.showSeason,'posterURL':showPage.showPoster,'episodes':showPage.showEpisodes}
                     dataHash=genHash(str(showData))
                     if ndbShow.hash != dataHash:
-                        logging.info("Show data was changed foк show: %s",showPage.showTitle)
+                        logging.info("Show data was changed for show: %s",showPage.showTitle)
                         ndbShow.data=showData
                         ndbShow.hash=dataHash
                         showsToPut.append(ndbShow)
