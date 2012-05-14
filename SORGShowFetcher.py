@@ -60,7 +60,10 @@ class SORGShowFetcher(ShowFetcher):
         playlistDataStart=playListRaw.find('p.setPlaylist( ')+15
         playlistData=playListRaw[playlistDataStart:playListRaw.find(']',playlistDataStart)+1]
 
-        playlist=json.loads(playlistData)
+        try:
+            playlist=json.loads(playlistData)
+        except :
+            playlist=[]
 
         for episode in playlist:
             result.append(playlist.index(episode)+1,episode[u"episodeId"])

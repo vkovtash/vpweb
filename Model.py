@@ -7,7 +7,7 @@ from urlparse import urlparse
 
 
 def genHash(value):
-    hash=hashlib.md5()
+    hash=hashlib.sha1()
     hash.update(value)
     return hash.hexdigest()
 
@@ -173,7 +173,6 @@ class Service():
             if showKey.get() is None:
                 show = ShowNDB(key=showKey)
                 show.url = url
-                show.service = urlparse(url).netloc
                 show.put()
 
         return showKey
@@ -205,27 +204,30 @@ class Subscription():
 
             showData=show.key.parent().get()
 
-            if showData.data is not None:
-                showResult={'showKey':show.key.urlsafe(),
-                            'serviceName':showData.service,
-                            'title':showData.data["title"],
-                            'season':showData.data["season"],
-                            'posterURL':showData.data["posterURL"],
-                            'episodes':[]}
-
+            if showData is not None:
                 if showData.data is not None:
-                    showEpisodes=set(showData.data['episodes'].keys())
-                else:
-                    showEpisodes=set([])
+                    showResult={'showKey':show.key.urlsafe(),
+                                'serviceName':showData.service,
+                                'title':showData.data["title"],
+                                'season':showData.data["season"],
+                                'posterURL':showData.data["posterURL"],
+                                'episodes':[]}
 
-                downloadedEpisodes=set(show.downloaded)
+                    if showData.data is not None:
+                        showEpisodes=set(showData.data['episodes'].keys())
+                    else:
+                        showEpisodes=set([])
 
-                for newEpisode in (showEpisodes-downloadedEpisodes):
+                    downloadedEpisodes=set(show.downloaded)
 
-                    showResult["episodes"].append({'number':newEpisode,
-                                                    'url':showData.data['episodes'][newEpisode]})
+                    for newEpisode in (showEpisodes-downloadedEpisodes):
 
-                result['shows'].append(showResult)
+                        showResult["episodes"].append({'number':newEpisode,
+                                                        'url':showData.data['episodes'][newEpisode]})
+
+                    result['shows'].append(showResult)
+            else:
+                show.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
 
         return result
 
