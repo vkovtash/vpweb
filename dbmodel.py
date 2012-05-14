@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from google.appengine.ext import ndb
-import hashlib
-from urlparse import urlparse
 
 class ShowNDB(ndb.Model):
     url = ndb.StringProperty()

@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from DbModel import *
-import downloader,re,hashlib
-import logging
+import downloader,re,hashlib,logging
+from urlparse import urlparse
 
 
 def genHash(value):
@@ -83,11 +83,13 @@ class ShowFetcher():
         """
         if self._showTitle is not None:
             return self._showTitle
+        result=""
         #=================Add your code here====================
 
 
         #=======================================================
-        result=self.normalizeTitle(showTitle)
+
+        result=self.normalizeTitle(result)
         self._showTitle=result
         return result
 
