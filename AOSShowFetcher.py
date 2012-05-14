@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import downloader,re
+import downloader,re,json
 from Model import *
 
 class AOSShowFetcher(ShowFetcher):
