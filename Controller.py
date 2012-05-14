@@ -1,219 +1,40 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from DbModel import *
-import downloader,re,json,hashlib
-import logging
+from google.appengine.ext import webapp
 
-class EpisodeList(dict):
-    def __init__(self,*args):
-        dict.__init__(self, args)
+import Model
+from AOSShowFetcher import AOSShowFetcher
+from SORGShowFetcher import SORGShowFetcher
+import json,logging
 
-    def append(self,episodeNumber,episodeURL):
-        if episodeNumber is not None:
-            dict.__setitem__(self, str(episodeNumber), episodeURL)
+userName="aluzar"
+Service=Model.Service([AOSShowFetcher,
+                       SORGShowFetcher])
 
-    def remove(self,episodeNumber):
-        if episodeNumber is not None:
-            try:
-                dict.pop(self, str(episodeNumber))
-            except KeyError:
-                pass
+class AddShow(webapp.RequestHandler):
+    def get(self):
 
-    @property
-    def episodeNumbers(self):
-        return dict.keys(self)
+        url=self.request.get('u')
+        showKey=Service.registerShow(url)
 
-class ShowFetcher():
-    #Требует оверрайда. Должно быть указаны доменные имена сервиса
-    showService=["dummyservice.org",
-                 "www.dummyservice.org"]
+        userSubscription=Model.Subscription(userName)
+        userSubscription.subscribeByShowKey(showKey)
 
-    def __init__(self,showURL):
-        self._showURL=showURL
-        self._showPage=None
-        self._showEpisodes=None
-        self._showTitle=None
-        self._showPoster=None
+    post = get
 
-        if not self.__checkService():
-            raise Exception('URL is not in showServices list')
+class UpdateShowsJob(webapp.RequestHandler):
+    def get(self):
+        Service.updateAllShows()
 
-    def getShowPage(self):
-        """
-        Требует оверрайда. В зависимости от типа данных может потребоваться изменить используемый метод
-        """
-        return downloader.HTMLDocGet(self._showURL)
+class UserNewEpisodes(webapp.RequestHandler):
+    def get(self):
+        userSubscription=Model.Subscription(userName)
+        responseShows=json.dumps(userSubscription.newEpisodes)
+        response={'response':responseShows}
+        self.response.out.write(response)
 
-    def __checkService(self):
-        serviceFromUrl=urlparse(self._showURL).netloc
-        validServices=set(self.showService)
-        return serviceFromUrl in validServices
+class MainHandler(webapp.RequestHandler):
+    def get(self):
+        pass
 
-    def normalizeTitle(self,title=""):
-
-        showTitle=title.replace(":","")
-        showTitle=showTitle.replace(";","")
-        showTitle=showTitle.replace(",","")
-        showTitle=showTitle.replace(".","")
-        showTitle=showTitle.replace("_"," ")
-        showTitle=re.sub(" +"," ",showTitle)
-        showTitle=showTitle.strip()
-
-        return showTitle
-
-    @property
-    def showPage(self):
-        if self._showPage is None:
-            self._showPage=self.getShowPage()
-            if self._showPage.data is None:
-                self._showPage=None
-        return self._showPage
-
-    @property
-    def showTitle(self):
-        """
-        Требует оверрайда. Должно возвращаться нормализованое название
-        """
-        if self._showTitle is not None:
-            return self._showTitle
-        #=================Add your code here====================
-
-
-        #=======================================================
-        result=self.normalizeTitle(showTitle)
-        self._showTitle=result
-        return result
-
-    @property
-    def showPoster(self):
-        """
-        Требует оверрайда. Должна возвращаться абсолютная ссылка на постер
-        """
-        if self._showPoster is not None:
-            return self._showPoster
-
-        result=""
-        #=================Add your code here====================
-
-
-        #=======================================================
-        return result
-
-    @property
-    def showSeason(self):
-        """
-        Требует оверрайда. Дожен возвращаться номер сезона
-        """
-        result="1"
-        #=================Add your code here====================
-
-
-        #=======================================================
-        return result
-
-    @property
-    def showEpisodes(self):
-        """
-        Требует оверрайда. Должен заполняться EpisodeList()
-        """
-        if self._showEpisodes is not None:
-            return self._showEpisodes
-
-        result=EpisodeList()
-        #=================Add your code here====================
-
-
-        #=======================================================
-        self._showEpisodes=result
-        return result
-
-
-class Service():
-    def __init__(self):
-        self.showFetchers = [ ]
-
-    def updateAllShows(self):
-
-        for service in self.showFetchers:
-            ndbQuery = ShowNDB.query(ShowNDB.service.IN(service.showService))
-            ndbShows = ndbQuery.fetch(1000)
-
-            showsToPut=[]
-            for ndbShow in ndbShows:
-                showPage=service(ndbShow.url)
-
-                if showPage.showPage is not None:
-                    ndbShow.data={'title':showPage.showTitle,'season':showPage.showSeason,'posterURL':showPage.showPoster,'episodes':showPage.showEpisodes}
-                    dataHash=genHash(str(ndbShow.data))
-                    if ndbShow.hash != dataHash:
-                        ndbShow.hash=dataHash
-                        showsToPut.append(ndbShow)
-
-            ndb.put_multi(showsToPut)
-
-    def registerShow(self,url):
-        showKey = None
-        if genHash(url) is not None:
-            showKey=ndb.Key('ShowNDB',genHash(url))
-            if showKey.get() is None:
-                show = ShowNDB(key=showKey)
-                show.url = url
-                show.service = urlparse(url).netloc
-                show.put()
-
-        return showKey
-
-class Subscription():
-    def __init__(self,userName):
-        self._userName=userName
-        self._subscribedShowsQuery=UsersWatchListNDB.query(UsersWatchListNDB.user==self._userName)
-
-
-    def subscribeByShowKey(self,showKey):
-        if showKey is not None:
-            subscriptionKey=ndb.Key('UsersWatchListNDB',self._userName,parent=showKey)
-            if subscriptionKey.get() is None:
-                subscription = UsersWatchListNDB(key=subscriptionKey)
-                subscription.user=self._userName
-                subscription.put()
-
-    @property
-    def subscribedShows(self):
-        return self._subscribedShowsQuery.fetch(1000)
-
-    @property
-    def newEpisodes(self):
-
-        result={'shows':[]}
-
-        for show in self.subscribedShows:
-
-            showData=show.key.parent().get()
-
-            if showData.data is not None:
-                showResult={'showKey':show.key.urlsafe(),
-                            'serviceName':showData.service,
-                            'title':showData.data["title"],
-                            'season':showData.data["season"],
-                            'posterURL':showData.data["posterURL"],
-                            'episodes':[]}
-
-                if showData.data is not None:
-                    showEpisodes=set(showData.data['episodes'].keys())
-                else:
-                    showEpisodes=set([])
-
-                downloadedEpisodes=set(show.downloaded)
-
-                for newEpisode in (showEpisodes-downloadedEpisodes):
-
-                    showResult["episodes"].append({'number':newEpisode,
-                                                    'url':showData.data['episodes'][newEpisode]})
-
-                result['shows'].append(showResult)
-
-        return result
-
-if __name__ == "__main__":
-    pass

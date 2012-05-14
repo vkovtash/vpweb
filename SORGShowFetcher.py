@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-from Controller import *
+from Model import *
 import json,re,logging
 
 class SORGShowFetcher(ShowFetcher):

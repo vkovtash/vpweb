@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import downloader,re
-from Controller import *
+from Model import *
 
 class AOSShowFetcher(ShowFetcher):
     showService=["animeonline.su"]

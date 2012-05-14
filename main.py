@@ -16,7 +16,7 @@
 #
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
-from View import *
+from Controller import *
 
 def main():
     application = webapp.WSGIApplication([  ('/',MainHandler),
