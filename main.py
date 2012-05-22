@@ -19,7 +19,7 @@ from google.appengine.ext.webapp import util
 from Controller import *
 
 def main():
-    application = webapp.WSGIApplication([  ('/',MainHandler),
+    application = webapp.WSGIApplication([  ('/',UserSubscriprions),
     										('/addbookmark',AddShow),
     										('/updateshows',UpdateShowsJob),
     										('/getnewepisodes',UserNewEpisodes),

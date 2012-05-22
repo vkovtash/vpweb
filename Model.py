@@ -5,7 +5,6 @@ from DbModel import *
 import downloader,re,hashlib,logging
 from urlparse import urlparse
 
-
 def genHash(value):
     hash=hashlib.sha1()
     hash.update(value)
@@ -201,6 +200,47 @@ class Subscription():
         return ndb.get_multi(self._subscribedShowsQuery.fetch(keys_only=True))
 
     @property
+    def subscribedShowsData(self):
+        result=[]
+
+        for show in self.subscribedShows:
+
+            showData=show.key.parent().get()
+
+            if showData is not None:
+                if showData.data is not None:
+                    showResult={'showKey':show.key.urlsafe(),
+                                'service':showData.service,
+                                'title':showData.data["title"],
+                                'season':showData.data["season"],
+                                'posterURL':showData.data["posterURL"],
+                                'episodes':[]}
+
+                    if showData.data is not None:
+                        showEpisodes=set(showData.data['episodes'].keys())
+                    else:
+                        showEpisodes=set([])
+
+                    downloadedEpisodes=set(show.downloaded)
+
+
+                    for episode in showEpisodes:
+
+                        episodeIsDownloaded='0'
+
+                        if episode in downloadedEpisodes:
+                            episodeIsDownloaded='1'
+
+                        showResult["episodes"].append({'number':episode,
+                                                       'isDownloaded':episodeIsDownloaded})
+
+                    result.append(showResult)
+            else:
+                show.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
+
+        return result
+
+    @property
     def newEpisodes(self):
 
         result={'services':{}}
@@ -240,11 +280,24 @@ class Subscription():
 
         return result
 
-    def markEpisodeAsDownloaded(self,showKey,episodeNumner):
+    def markEpisodeAsDownloaded(self,showKey,episodeNumber):
         subscriptionKey=ndb.Key(urlsafe=showKey)
         subscription=subscriptionKey.get()
-        subscription.downloaded.append(episodeNumner)
+        subscriptionSet=set(subscription.downloaded)
+        subscriptionSet.add(episodeNumber)
+        subscription.downloaded=list(subscriptionSet)
         subscription.put()
+
+    def markEpisodeAsNotDownloaded(self,showKey,episodeNumber):
+        subscriptionKey=ndb.Key(urlsafe=showKey)
+        subscription=subscriptionKey.get()
+        subscriptionSet=set(subscription.downloaded)
+        try:
+            subscriptionSet.remove(episodeNumber)
+            subscription.downloaded=list(subscriptionSet)
+            subscription.put()
+        except KeyError:
+            pass
 
 
 
