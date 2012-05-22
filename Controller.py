@@ -29,9 +29,15 @@ class UpdateShowsJob(webapp.RequestHandler):
 class UserNewEpisodes(webapp.RequestHandler):
     def get(self):
         userSubscription=Model.Subscription(userName)
-        responseShows=json.dumps(userSubscription.newEpisodes)
-        response={'response':responseShows}
+        response=json.dumps({'response':userSubscription.newEpisodes})
         self.response.out.write(response)
+
+class MarkEpisodeAsDownloaded(webapp.RequestHandler):
+    def get(self):
+        episodeNumber=self.request.get('ep_num')
+        showKey=self.request.get('show_key')
+        userSubscription=Model.Subscription(userName)
+        userSubscription.markEpisodeAsDownloaded(showKey,episodeNumber)
 
 class MainHandler(webapp.RequestHandler):
     def get(self):

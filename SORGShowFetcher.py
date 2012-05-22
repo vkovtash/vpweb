@@ -66,7 +66,7 @@ class SORGShowFetcher(ShowFetcher):
             playlist=[]
 
         for episode in playlist:
-            result.append(playlist.index(episode)+1,episode[u"episodeId"])
+            result.append(playlist.index(episode)+1,"".join([self.showURL,'|',str(episode[u"episodeId"])]))
 
         #=======================================================
         self._showEpisodes=result

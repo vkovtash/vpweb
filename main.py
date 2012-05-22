@@ -22,7 +22,8 @@ def main():
     application = webapp.WSGIApplication([  ('/',MainHandler),
     										('/addbookmark',AddShow),
     										('/updateshows',UpdateShowsJob),
-    										('/getnewepisodes',UserNewEpisodes)],
+    										('/getnewepisodes',UserNewEpisodes),
+                                            ('/setdownloaded',MarkEpisodeAsDownloaded)],
                                          debug=True)
     util.run_wsgi_app(application)
 

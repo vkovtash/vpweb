@@ -77,6 +77,10 @@ class ShowFetcher():
         return self._showPage
 
     @property
+    def showURL(self):
+        return self._showURL
+
+    @property
     def showTitle(self):
         """
         Требует оверрайда. Должно возвращаться нормализованое название
@@ -135,6 +139,7 @@ class ShowFetcher():
         #=======================================================
         self._showEpisodes=result
         return result
+
 
 
 class Service():
@@ -198,7 +203,7 @@ class Subscription():
     @property
     def newEpisodes(self):
 
-        result={'shows':[]}
+        result={'services':{}}
 
         for show in self.subscribedShows:
 
@@ -207,7 +212,6 @@ class Subscription():
             if showData is not None:
                 if showData.data is not None:
                     showResult={'showKey':show.key.urlsafe(),
-                                'serviceName':showData.service,
                                 'title':showData.data["title"],
                                 'season':showData.data["season"],
                                 'posterURL':showData.data["posterURL"],
@@ -225,11 +229,24 @@ class Subscription():
                         showResult["episodes"].append({'number':newEpisode,
                                                         'url':showData.data['episodes'][newEpisode]})
 
-                    result['shows'].append(showResult)
+                    try:
+                        result['services'][showData.service]
+                    except KeyError:
+                        result['services'][showData.service]=[]
+
+                    result['services'][showData.service].append(showResult)
             else:
                 show.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
 
         return result
+
+    def markEpisodeAsDownloaded(self,showKey,episodeNumner):
+        subscriptionKey=ndb.Key(urlsafe=showKey)
+        subscription=subscriptionKey.get()
+        subscription.downloaded.append(episodeNumner)
+        subscription.put()
+
+
 
 if __name__ == "__main__":
     pass
