@@ -217,9 +217,11 @@ class Subscription():
                                 'episodes':[]}
 
                     if showData.data is not None:
-                        showEpisodes=set(showData.data['episodes'].keys())
+                        showEpisodes=map(int,showData.data['episodes'].keys())
+                        showEpisodes.sort(reverse=True)
+                        showEpisodes=map(str,showEpisodes)
                     else:
-                        showEpisodes=set([])
+                        showEpisodes=[]
 
                     downloadedEpisodes=set(show.downloaded)
 

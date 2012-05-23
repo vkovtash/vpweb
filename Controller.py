@@ -50,8 +50,12 @@ class MarkEpisodeAsDownloaded(webapp.RequestHandler):
 class UserSubscriprions(webapp.RequestHandler):
     def get(self):
         userSubscription=Model.Subscription(userName)
+
+        showsData=userSubscription.subscribedShowsData
+
+        showsData=sorted( showsData, key=lambda k:"".join([k["title"],k["season"].zfill(2)]) )
         Tmain_values={
-            "Shows":userSubscription.subscribedShowsData
+            "Shows":showsData
         }
 
         path = os.path.join(os.path.dirname(__file__), 'templates/UserSubscriptionData.tpl')
