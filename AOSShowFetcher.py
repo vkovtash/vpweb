@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import downloader,re,json
+import downloader,re,json, logging
 from Model import *
 
 class AOSShowFetcher(ShowFetcher):
@@ -16,8 +16,13 @@ class AOSShowFetcher(ShowFetcher):
         showRawTitle="".join(self.showPage.data.xpath('//div[@id="dle-content"]/div[@class="new_"]/div[@class="head_"]/a/descendant::text()'))
         #Приводим название в человеческий вид
         titles=showRawTitle.split(" / ")
-
-        showTitle=titles[1]
+		
+        try:
+            showTitle=titles[1]
+        except IndexError:
+            showTitle="Unknown"
+            logging.error("Can't parse show title " + showRawTitle)
+        	
         showTitle=re.sub("\[.*\]","",showTitle)
         showTitle=re.sub("\(.*\)","",showTitle)
 
