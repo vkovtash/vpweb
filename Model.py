@@ -63,6 +63,7 @@ class ShowFetcher():
         showTitle=showTitle.replace(".","")
         showTitle=showTitle.replace("_"," ")
         showTitle=re.sub(" +"," ",showTitle)
+        showTitle=re.sub("/"," ",showTitle)
         showTitle=showTitle.strip()
 
         return showTitle
