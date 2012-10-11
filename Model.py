@@ -4,6 +4,7 @@
 from DbModel import *
 import downloader,re,hashlib,logging
 from urlparse import urlparse
+from httplib import HTTPException
 
 def genHash(value):
     hash=hashlib.sha1()
@@ -71,9 +72,16 @@ class ShowFetcher():
     @property
     def showPage(self):
         if self._showPage is None:
-            self._showPage=self.getShowPage()
+            try:
+                self._showPage=self.getShowPage()
+            except HTTPException:
+                logging.error("HTTP exception while getting URL " + self._showURL)
+                self._showPage = None
+                return self._showPage
+
             if self._showPage.data is None:
                 self._showPage=None
+
         return self._showPage
 
     @property

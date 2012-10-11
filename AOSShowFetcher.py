@@ -105,8 +105,12 @@ class AOSShowFetcher(ShowFetcher):
             if not len(playlistRequestURL):
                 return result
 
+            try:
+                playlistData=downloader.DocGet(playlistRequestURL).data
+            except ValueError:
+                logging.error(self._showTitle +":bad playlist URL " + playlistRequestURL)
+                return result
 
-            playlistData=downloader.DocGet(playlistRequestURL).data
 
             if playlistData is None:
                 return result

@@ -9,8 +9,9 @@ from AOSShowFetcher import AOSShowFetcher
 from SORGShowFetcher import SORGShowFetcher
 
 userName="aluzar"
-Service=Model.Service([AOSShowFetcher,
-                       SORGShowFetcher])
+Service=Model.Service   ([  AOSShowFetcher,
+                            #SORGShowFetcher
+                        ])
 
 class AddShow(webapp.RequestHandler):
     def get(self):
