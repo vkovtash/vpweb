@@ -80,52 +80,70 @@ class AOSShowFetcher(ShowFetcher):
             "codec_b":["2","i","o","3","g","L","B","x","z","4","0","m","8","V","d","J","k","t","f","Q","n","y","7","r","Y","e"]
         }
 
-        #Определяет начало и конец зашифрованного урла плэйлиста
-        playlistURLStart='var playlist = "'
-        playlistURLEnd='";'
 
-        playlistRawURL="".join(self.showPage.data.xpath('//div[@id="dle-content"]/script/descendant::text()'))
+        playerURL = "".join(self.showPage.data.xpath('//a[@id="full_anime_watch"]/@onclick'))
+        playerURLStartIndex = playerURL.find("'")
+        if  playerURLStartIndex > 0:
+            playerURL = playerURL[playerURLStartIndex+1:playerURL.find("'",playerURLStartIndex+1)]
+            playerURL = "".join(['http://',self.showService[0],playerURL])
 
-        playlistURLStartIndex=playlistRawURL.find(playlistURLStart)
-        if playlistURLStartIndex>0:
-            playlistURL=playlistRawURL[playlistURLStartIndex+len(playlistURLStart):playlistRawURL.find(playlistURLEnd)]
-
-            if playlistURL.find("http:")>-1:
-                playlistRequestURL=playlistURL      #Unencrypted playlist
-            else:
-                #Encrypted playlist
-
-                #Try first key
-                playlistRequestURL=self.decryptPlaylistURL(aosKey1,playlistURL)
-                if not len(playlistRequestURL):
-                    #Try second key
-                    playlistRequestURL=self.decryptPlaylistURL(aosKey2,playlistURL)
-
-            #Return an empty episodes set when playlistURL not found
-            if not len(playlistRequestURL):
-                return result
+            logging.error ('playerURL: '+playerURL)
 
             try:
-                playlistData=downloader.DocGet(playlistRequestURL).data
+                playerPage=downloader.HTMLDocGet(playerURL)
             except ValueError:
-                logging.error(self._showTitle +":bad playlist URL " + playlistRequestURL)
+                logging.error(self._showTitle +":bad player page URL " + playerURL)
                 return result
 
+        playlistRawURL="".join(playerPage.data.xpath('//object[@id="aosplayer"]/param[@name="flashvars"]/@value'))
+        flashVars = playlistRawURL.split('&')
 
-            if playlistData is None:
-                return result
+        playlistURL = None
 
-            #Очистка плэйлиста от ненужных символов
-            playlistData=playlistData.replace("\r\n","")
-            playlistData=playlistData.replace(chr(255),"")
-            playlistData=playlistData.replace(chr(254),"")
-            playlistData=playlistData.replace(chr(0),"")
+        for var in flashVars:
+            if var.find('pl=') > -1:
+                playlistURL = var.replace('pl=','')
 
-            #Загрузка плэйлиста в словарь
-            playlist=json.loads(playlistData)
+        if  playlistURL is None:
+            logging.error(self._showTitle +"No playlist found in the player flashvars")
+            return result
 
-            for episode in playlist["playlist"]:
-                result.append(episodeNumber=playlist["playlist"].index(episode)+1,episodeURL=episode["file"])
+        if playlistURL.find("http:")>-1:
+            playlistRequestURL=playlistURL      #Unencrypted playlist
+        else:
+            #Encrypted playlist
+
+            #Try first key
+            playlistRequestURL=self.decryptPlaylistURL(aosKey1,playlistURL)
+            if not len(playlistRequestURL):
+                #Try second key
+                playlistRequestURL=self.decryptPlaylistURL(aosKey2,playlistURL)
+
+        #Return an empty episodes set when playlistURL not found
+        if not len(playlistRequestURL):
+            return result
+
+        try:
+            playlistData=downloader.DocGet(playlistRequestURL).data
+        except ValueError:
+            logging.error(self._showTitle +":bad playlist URL " + playlistRequestURL)
+            return result
+
+
+        if playlistData is None:
+            return result
+
+        #Очистка плэйлиста от ненужных символов
+        playlistData=playlistData.replace("\r\n","")
+        playlistData=playlistData.replace(chr(255),"")
+        playlistData=playlistData.replace(chr(254),"")
+        playlistData=playlistData.replace(chr(0),"")
+
+        #Загрузка плэйлиста в словарь
+        playlist=json.loads(playlistData)
+
+        for episode in playlist["playlist"]:
+            result.append(episodeNumber=playlist["playlist"].index(episode)+1,episodeURL=episode["file"])
 
         #=======================================================
         self._showEpisodes=result
