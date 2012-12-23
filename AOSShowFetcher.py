@@ -87,8 +87,6 @@ class AOSShowFetcher(ShowFetcher):
             playerURL = playerURL[playerURLStartIndex+1:playerURL.find("'",playerURLStartIndex+1)]
             playerURL = "".join(['http://',self.showService[0],playerURL])
 
-            logging.error ('playerURL: '+playerURL)
-
             try:
                 playerPage=downloader.HTMLDocGet(playerURL)
             except ValueError:
