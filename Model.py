@@ -171,11 +171,10 @@ class Service():
                     showData={'title':showPage.showTitle,'season':showPage.showSeason,'posterURL':showPage.showPoster,'episodes':showPage.showEpisodes}
                     dataHash=genHash(str(showData))
                     if ndbShow.hash != dataHash:
-                        logging.info("Show data was changed for show: %s",showPage.showTitle)
+                        logging.info("Data changed for show %s with episodes: %s, hash: %s",showPage.showTitle, len(showData['episodes']), dataHash)
                         ndbShow.data=showData
                         ndbShow.hash=dataHash
                         showsToPut.append(ndbShow)
-
 
             ndb.put_multi(showsToPut)
 
@@ -220,6 +219,7 @@ class Subscription():
                 if showData.data is not None:
                     showResult={'showKey':show.key.urlsafe(),
                                 'service':showData.service,
+                                'lastChanged':showData.lastChanged,
                                 'title':showData.data["title"],
                                 'season':showData.data["season"],
                                 'posterURL':showData.data["posterURL"],

@@ -54,7 +54,8 @@ class UserSubscriprions(webapp.RequestHandler):
 
         showsData=userSubscription.subscribedShowsData
 
-        showsData=sorted( showsData, key=lambda k:"".join([k["title"],k["season"].zfill(2)]) )
+        #showsData=sorted( showsData, key=lambda k:"".join([k["title"],k["season"].zfill(2)]) )
+        showsData=sorted( showsData, key=lambda k:k["lastChanged"], reverse=True )
         Tmain_values={
             "Shows":showsData
         }
