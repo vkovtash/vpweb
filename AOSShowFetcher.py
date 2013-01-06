@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import downloader,re,json, logging
+import downloader,re,json, logging, time
 from Model import *
 
 class AOSShowFetcher(ShowFetcher):
@@ -121,6 +121,8 @@ class AOSShowFetcher(ShowFetcher):
         if not len(playlistRequestURL):
             return result
 
+        playlistRequestURL = ''.join([playlistRequestURL,'?ts=',str(int(time.time()/3600))])
+        
         try:
             playlistData=downloader.DocGet(playlistRequestURL).data
         except ValueError:
