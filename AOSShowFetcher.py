@@ -132,6 +132,15 @@ class AOSShowFetcher(ShowFetcher):
 
         if playlistData is None:
             return result
+        
+        #Расшифровка плейлиста, если он зашифрован 
+        if playlistData[0:11] != '{"playlist"':
+            decryptedPlaylistData = self.decryptPlaylistURL(aosKey1,playlistData)
+            
+            if decryptedPlaylistData[0:11] != '{"playlist"':
+                decryptedPlaylistData = self.decryptPlaylistURL(aosKey2,playlistData)
+                
+            playlistData = decryptedPlaylistData
 
         #Очистка плэйлиста от ненужных символов
         playlistData=playlistData.replace("\r\n","")
@@ -140,7 +149,11 @@ class AOSShowFetcher(ShowFetcher):
         playlistData=playlistData.replace(chr(0),"")
 
         #Загрузка плэйлиста в словарь
-        playlist=json.loads(playlistData)
+        try:
+            playlist=json.loads(playlistData)
+        except ValueError:
+            logging.error(self._showTitle +":playlist data not in JSON format " + playlistData + " for URL " + playlistRequestURL)
+            return result
 
         for episode in playlist["playlist"]:
             result.append(episodeNumber=playlist["playlist"].index(episode)+1,episodeURL=episode["file"])
