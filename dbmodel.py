@@ -9,7 +9,7 @@ class ShowNDB(ndb.Model):
     service = ndb.ComputedProperty(lambda self: self.serviceName)
     data = ndb.JsonProperty()
     hash = ndb.StringProperty()
-    lastChanged = ndb.DateTimeProperty(auto_now_add=True)
+    lastChanged = ndb.DateTimeProperty(auto_now=True)
 
     @property
     def serviceName(self):
