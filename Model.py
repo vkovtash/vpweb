@@ -36,52 +36,25 @@ class ShowFetcher():
                  "www.dummyservice.org"]
 
     def __init__(self,showURL):
-        self._showURL=showURL
-        self._showPage=None
-        self._showEpisodes=None
-        self._showTitle=None
-        self._showPoster=None
+        self._showURL = showURL
+        self._showPage = None
+        self._showEpisodes = None
+        self._showTitle = None
+        self._showPoster = None
+        self._showSeason = None
 
         if not self.__checkService():
             raise Exception('URL is not in showServices list')
-
-    def getShowPage(self):
-        """
-        Требует оверрайда. В зависимости от типа данных может потребоваться изменить используемый метод
-        """
-        return downloader.HTMLDocGet(self._showURL)
 
     def __checkService(self):
         serviceFromUrl=urlparse(self._showURL).netloc
         validServices=set(self.showService)
         return serviceFromUrl in validServices
 
-    def normalizeTitle(self,title=""):
-
-        showTitle=title.replace(":","")
-        showTitle=showTitle.replace(";","")
-        showTitle=showTitle.replace(",","")
-        showTitle=showTitle.replace(".","")
-        showTitle=showTitle.replace("_"," ")
-        showTitle=re.sub(" +"," ",showTitle)
-        showTitle=re.sub("/"," ",showTitle)
-        showTitle=showTitle.strip()
-
-        return showTitle
-
     @property
     def showPage(self):
         if self._showPage is None:
-            try:
-                self._showPage=self.getShowPage()
-            except HTTPException:
-                logging.error("HTTP exception while getting URL " + self._showURL)
-                self._showPage = None
-                return self._showPage
-
-            if self._showPage.data is None:
-                self._showPage=None
-
+            self._showPage = self.get_show_page(self._showURL)
         return self._showPage
 
     @property
@@ -91,63 +64,76 @@ class ShowFetcher():
     @property
     def showTitle(self):
         """
-        Требует оверрайда. Должно возвращаться нормализованое название
+        Возвращает нормализованое название
         """
-        if self._showTitle is not None:
-            return self._showTitle
-        result=""
-        #=================Add your code here====================
-
-
-        #=======================================================
-
-        result=self.normalizeTitle(result)
-        self._showTitle=result
-        return result
+        if self._showTitle is None:
+            self._showTitle = self.extract_show_title()
+            self._showTitle = self.normalize_title(self._showTitle)
+        return self._showTitle
 
     @property
     def showPoster(self):
         """
-        Требует оверрайда. Должна возвращаться абсолютная ссылка на постер
+        Возвращает абсолютную ссылку на постер
         """
-        if self._showPoster is not None:
-            return self._showPoster
-
-        result=""
-        #=================Add your code here====================
-
-
-        #=======================================================
-        return result
+        if self._showPoster is None:
+            self._showPoster = self.extract_show_poster_url()
+        return self._showPoster
 
     @property
     def showSeason(self):
         """
-        Требует оверрайда. Дожен возвращаться номер сезона
+        Возвращает номер сезона
         """
-        result="1"
-        #=================Add your code here====================
-
-
-        #=======================================================
-        return result
+        if self._showSeason is None:
+            self._showSeason = self.extract_show_season()
+        return self._showSeason
 
     @property
     def showEpisodes(self):
         """
-        Требует оверрайда. Должен заполняться EpisodeList()
+        Возвращает экземпляр класса EpisodeList()
         """
-        if self._showEpisodes is not None:
-            return self._showEpisodes
+        if self._showEpisodes is None:
+            self._showEpisodes = self.extract_show_episodes()
+        return self._showEpisodes
 
-        result=EpisodeList()
-        #=================Add your code here====================
+    def normalize_title(self,title):
+        show_title = title
+        show_title = show_title.replace(":","")
+        show_title = show_title.replace(";","")
+        show_title = show_title.replace(",","")
+        show_title = show_title.replace(".","")
+        show_title = show_title.replace("_"," ")
+        show_title = re.sub(" +"," ",show_title)
+        show_title = re.sub("/"," ",show_title)
+        show_title = show_title.strip()
 
+        return show_title
 
-        #=======================================================
-        self._showEpisodes=result
-        return result
+    def extract_show_title(self):
+        return ""
 
+    def extract_show_poster_url(self):
+        return ""
+
+    def extract_show_season(self):
+        return "1"
+
+    def extract_show_episodes(self):
+        return EpisodeList()
+
+    def get_show_page(self,url):
+        show_page = None
+        try:
+            show_page = downloader.HTMLDocGet(url)
+        except HTTPException:
+            logging.error("HTTP exception while getting URL %s"%url)
+            return None
+
+        if show_page.data is None:
+            return None
+        return show_page
 
 
 class Service():
