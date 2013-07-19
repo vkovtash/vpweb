@@ -7,6 +7,10 @@ threadsafe: no
 libraries:
 - name: lxml
   version: latest
+- name: webapp2
+  version: latest
+- name: jinja2
+  version: latest
 
 handlers:
 - url: /favicon\.ico
@@ -14,5 +18,5 @@ handlers:
   upload: favicon\.ico
 - url: /src
   static_dir: src
-- url: .*
-  script: main.py
+- url: /.*
+  script: main.application

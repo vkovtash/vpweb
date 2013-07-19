@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
-
-import Model, json, os.path , logging
+import webapp2
+import Model
+import json
+import logging
 from AOSShowFetcher import AOSShowFetcher
 
 userName="aluzar"
 Service=Model.Service([AOSShowFetcher])
 
-class AddShow(webapp.RequestHandler):
+class AddShow(webapp2.RequestHandler):
     def get(self):
         url=self.request.get('u')
         url = url.split("#",1)[0]
@@ -22,17 +22,20 @@ class AddShow(webapp.RequestHandler):
 
     post = get
 
-class UpdateShowsJob(webapp.RequestHandler):
+
+class UpdateShowsJob(webapp2.RequestHandler):
     def get(self):
         Service.updateAllShows()
 
-class UserNewEpisodes(webapp.RequestHandler):
+
+class UserNewEpisodes(webapp2.RequestHandler):
     def get(self):
         userSubscription=Model.Subscription(userName)
         response=json.dumps({'response':userSubscription.newEpisodes})
-        self.response.out.write(response)
+        self.response.write(response)
 
-class MarkEpisodeAsDownloaded(webapp.RequestHandler):
+
+class MarkEpisodeAsDownloaded(webapp2.RequestHandler):
     def get(self):
         episodeNumber=self.request.get('ep_num')
         showKey=self.request.get('show_key')
@@ -46,22 +49,32 @@ class MarkEpisodeAsDownloaded(webapp.RequestHandler):
         else:
             userSubscription.markEpisodeAsDownloaded(showKey,episodeNumber)
 
-class UserSubscriprions(webapp.RequestHandler):
+
+class ShowListHandler(webapp2.RequestHandler):
     def get(self):
-        userSubscription=Model.Subscription(userName)
+        def remove_extra_data(show):
+            del show['lastChanged']
+            return show
 
-        showsData=userSubscription.subscribedShowsData
+        userSubscription = Model.Subscription(userName)
+        show_list_data = userSubscription.subscribedShowsList
+        show_list_data = sorted(show_list_data, key=lambda k:k['lastChanged'], reverse=True)
+        show_list_data = map(remove_extra_data,show_list_data)
+        show_list = {"Shows":show_list_data}
 
-        #showsData=sorted( showsData, key=lambda k:"".join([k["title"],k["season"].zfill(2)]) )
-        showsData=sorted( showsData, key=lambda k:k["lastChanged"], reverse=True )
-        Tmain_values={
-            "Shows":showsData
-        }
+        self.response.headers['Content-Type'] = 'text/json'
+        self.response.write(json.dumps(show_list))
 
-        path = os.path.join(os.path.dirname(__file__), 'templates/UserSubscriptionData.tpl')
-        self.response.out.write(template.render(path, Tmain_values))
 
-class MainHandler(webapp.RequestHandler):
+class ShowHandler(webapp2.RequestHandler):
+    def get(self, show_id):
+        userSubscription = Model.Subscription(userName)
+        show_data = userSubscription.show_data(show_id)
+        show_episodes = show_data['episodes']
+        self.response.write(show_data)
+
+
+class MainHandler(webapp2.RequestHandler):
     def get(self):
-        pass
+        self.redirect('/shows')
 

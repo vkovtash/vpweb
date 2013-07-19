@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from DbModel import *
-import downloader,re,hashlib,logging
+import downloader
+import re
+import hashlib
+import logging
 from urlparse import urlparse
 from httplib import HTTPException
 
@@ -194,6 +197,48 @@ class Subscription():
         return ndb.get_multi(self._subscribedShowsQuery.fetch(keys_only=True))
 
     @property
+    def subscribedShowsList(self):
+        result=[]
+
+        for show in self.subscribedShows:
+            showData=show.key.parent().get()
+            if showData is not None:
+                if showData.data is not None:
+                    showResult={'showKey':show.key.urlsafe(),
+                                'service':showData.service,
+                                'lastChanged':showData.lastChanged,
+                                'title':showData.data["title"],
+                                'season':showData.data["season"],
+                                'posterURL':showData.data["posterURL"]}
+                    result.append(showResult)
+            else:
+                show.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
+
+        return result
+
+    def show_data(self,show_key):
+        subscription_key = ndb.Key(urlsafe=show_key)
+        subscription = subscription_key.get()
+        show = subscription.key.parent().get()
+        show_data = show.data
+        if show_data is not None:
+            downloaded_episodes=set(subscription.downloaded)
+            episode_list = []
+            for episode_key in show_data['episodes'].keys():
+                episode_url = show_data['episodes'][episode_key]
+                episode_data = {'url':episode_url,'id':int(episode_key)}
+
+                if episode_key in downloaded_episodes:
+                    episode_data['isDownloaded'] = True
+                else:
+                    episode_data['isDownloaded'] = False
+
+                episode_list.append(episode_data)
+            show_data['episodes'] = episode_list
+
+        return show_data
+
+    @property
     def subscribedShowsData(self):
         result=[]
 
@@ -205,18 +250,15 @@ class Subscription():
                 if showData.data is not None:
                     showResult={'showKey':show.key.urlsafe(),
                                 'service':showData.service,
-                                'lastChanged':showData.lastChanged,
+                                #'lastChanged':showData.lastChanged,
                                 'title':showData.data["title"],
                                 'season':showData.data["season"],
                                 'posterURL':showData.data["posterURL"],
                                 'episodes':[]}
 
-                    if showData.data is not None:
-                        showEpisodes=map(int,showData.data['episodes'].keys())
-                        showEpisodes.sort(reverse=True)
-                        showEpisodes=map(str,showEpisodes)
-                    else:
-                        showEpisodes=[]
+                    showEpisodes=map(int,showData.data['episodes'].keys())
+                    showEpisodes.sort(reverse=True)
+                    showEpisodes=map(str,showEpisodes)
 
                     downloadedEpisodes=set(show.downloaded)
 
