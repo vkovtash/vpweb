@@ -6,17 +6,15 @@ from google.appengine.ext.webapp import template
 
 import Model, json, os.path , logging
 from AOSShowFetcher import AOSShowFetcher
-from SORGShowFetcher import SORGShowFetcher
 
 userName="aluzar"
-Service=Model.Service   ([  AOSShowFetcher,
-                            #SORGShowFetcher
-                        ])
+Service=Model.Service([AOSShowFetcher])
 
 class AddShow(webapp.RequestHandler):
     def get(self):
-
         url=self.request.get('u')
+        url = url.split("#",1)[0]
+        print url
         showKey=Service.registerShow(url)
 
         userSubscription=Model.Subscription(userName)
