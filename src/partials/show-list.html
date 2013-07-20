@@ -1,0 +1,15 @@
+<div class="container">
+  <div class="row">
+    <div class="span10 offset1">
+      <ul class="shows thumbnails">
+        <li ng-repeat="show in shows" class="span5">
+            <div class="thumbnail">
+            <a href="#/shows/{{show.showKey}}" class="show-li-thumb"><img ng-src="{{show.posterURL}}"></a>
+            <a href="#/shows/{{show.showKey}}" class="show-li-title"><h3>{{show.title}}</h3></a>
+            <p>Season {{show.season}}</p>
+            </div>  
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

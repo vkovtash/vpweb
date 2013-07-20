@@ -1,0 +1,41 @@
+/* app css stylesheet */
+
+/*body {
+  padding-top: 20px;
+}
+
+ul.shows li {
+  border: 1px solid black;
+  display: inline-block;
+  background-color: white;
+  margin: 1em;
+  padding-right: 10px;
+}
+
+h1 {
+  border-bottom: 1px solid gray;
+}
+*/
+
+ul.shows .thumbnail{
+  height: 150px;
+}
+
+.show-li-thumb {
+  float: left;
+  height: 150px;
+  max-width: 150px;
+  padding-right: 1em;
+}
+
+.show-li-thumb img{
+  height: 150px;
+  max-width: 100px;
+}
+
+.show-poster{
+  height: 150px;
+  max-width: 150px;
+  float: left;
+  margin: 1em;
+}
