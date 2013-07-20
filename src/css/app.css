@@ -4,16 +4,21 @@ body {
   padding-top: 60px;
 }
 
+ul.shows li{
+  margin-bottom: 0px;
+}
+
 ul.shows .thumbnail{
-  height: 120px;
-  margin-top: 15px; 
+  padding-left: 20px; 
+  height: 130px;
+  margin-top: 15px;
 }
 
 .show-card-thumb {
-  float: left;
   height: 150px;
-  max-width: 150px;
+  max-width: 100px;
   padding-right: 1em;
+  position: relative;
 }
 
 .show-card-thumb img{
@@ -21,16 +26,10 @@ ul.shows .thumbnail{
   max-width: 100px;
 }
 
-.show-card .progress{
-  height: 10px;
-}
-
 .show-cars-thumb-group {
     position: relative;
     margin: 0 auto;
     display: table;
-    margin-top: -15px;
-    margin-left: -5px;
 }
 
 .show-cars-thumb-group .badge{
@@ -38,3 +37,29 @@ ul.shows .thumbnail{
   bottom: 2px;
   right: 2px;
 }
+
+.progress-anchor{
+  display: table;
+  position: relative;
+}
+
+.progress-container{
+  position: absolute;
+  width: 255px;
+  bottom: -130px;
+}
+
+.progress-container p {
+  margin-right: 2px; 
+  margin-bottom: 0px;
+}
+
+.show-card .progress{
+  height: 10px;
+  margin-bottom: 10px;
+}
+
+.episodes [class*="span"]{
+  margin-left: 1.91% !important;
+}
+
