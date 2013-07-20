@@ -58,3 +58,8 @@ ul.shows .thumbnail{
   height: 10px;
   margin-bottom: 10px;
 }
+
+.episodes [class*="span"]{
+  margin-left: 1.91% !important;
+}
+
