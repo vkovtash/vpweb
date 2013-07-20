@@ -1,3 +1,10 @@
+<div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+      <span class="brand">ViPaper</span>
+    </div>
+  </div>
+</div>
 <div class="container">
   <div class="row">
     <div class="span10 offset1">
@@ -5,7 +12,7 @@
         <li ng-repeat="show in shows" class="span5">
             <div class="thumbnail">
             <a href="#/shows/{{show.showKey}}" class="show-li-thumb"><img ng-src="{{show.posterURL}}"></a>
-            <a href="#/shows/{{show.showKey}}" class="show-li-title"><h3>{{show.title}}</h3></a>
+            <a href="#/shows/{{show.showKey}}" class="show-li-title"><h4>{{show.title}}</h4></a>
             <p>Season {{show.season}}</p>
             </div>  
         </li>
