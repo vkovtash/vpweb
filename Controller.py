@@ -56,8 +56,8 @@ class ShowListHandler(webapp2.RequestHandler):
             del show['lastChanged']
             return show
 
-        userSubscription = Model.Subscription(userName)
-        show_list_data = userSubscription.subscribedShowsList
+        user_subscription = Model.Subscription(userName)
+        show_list_data = user_subscription.subscription_list
         show_list_data = sorted(show_list_data, key=lambda k:k['lastChanged'], reverse=True)
         show_list_data = map(remove_extra_data,show_list_data)
         show_list = {"Shows":show_list_data}
@@ -68,10 +68,22 @@ class ShowListHandler(webapp2.RequestHandler):
 
 class ShowHandler(webapp2.RequestHandler):
     def get(self, show_id):
-        userSubscription = Model.Subscription(userName)
-        show_data = userSubscription.show_data(show_id)
-        show_episodes = show_data['episodes']
-        self.response.write(show_data)
+        user_subscription = Model.Subscription(userName)
+        subscription_data = user_subscription.subscription_data(show_id)
+        self.response.write(json.dumps(subscription_data))
+
+    def post(self, show_id):
+        request_data = json.loads(self.request.body)
+        episode_numbers = []
+
+        for episode in request_data['episodes']:
+            if episode['isDownloaded']:
+                episode_numbers.append(episode['id'])
+
+        user_subscription = Model.Subscription(userName)
+        user_subscription.set_subscription_downloaded_episodes(show_id,episode_numbers)
+
+        self.get(show_id=show_id)
 
 
 class MainHandler(webapp2.RequestHandler):

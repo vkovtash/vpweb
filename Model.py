@@ -197,7 +197,7 @@ class Subscription():
         return ndb.get_multi(self._subscribedShowsQuery.fetch(keys_only=True))
 
     @property
-    def subscribedShowsList(self):
+    def subscription_list(self):
         result=[]
 
         for show in self.subscribedShows:
@@ -216,19 +216,21 @@ class Subscription():
 
         return result
 
-    def show_data(self,show_key):
+    def subscription_data(self,show_key):
         subscription_key = ndb.Key(urlsafe=show_key)
         subscription = subscription_key.get()
         show = subscription.key.parent().get()
         show_data = show.data
+        show_data["showId"] = show_key;
         if show_data is not None:
             downloaded_episodes=set(subscription.downloaded)
             episode_list = []
             for episode_key in show_data['episodes'].keys():
+                episode_id = int(episode_key)
                 episode_url = show_data['episodes'][episode_key]
-                episode_data = {'url':episode_url,'id':int(episode_key)}
+                episode_data = {'url':episode_url,'id':episode_id}
 
-                if episode_key in downloaded_episodes:
+                if episode_id in downloaded_episodes:
                     episode_data['isDownloaded'] = True
                 else:
                     episode_data['isDownloaded'] = False
@@ -237,6 +239,13 @@ class Subscription():
             show_data['episodes'] = episode_list
 
         return show_data
+
+    def set_subscription_downloaded_episodes(self,show_key,episode_numbers=[]):
+        subscription_key = ndb.Key(urlsafe=show_key)
+        subscription = subscription_key.get()
+        subscription_set = set(episode_numbers)
+        subscription.downloaded = list(subscription_set)
+        subscription.put()
 
     @property
     def subscribedShowsData(self):
