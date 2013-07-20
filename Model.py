@@ -20,12 +20,12 @@ class EpisodeList(dict):
 
     def append(self,episodeNumber,episodeURL):
         if episodeNumber is not None:
-            dict.__setitem__(self, str(episodeNumber), episodeURL)
+            dict.__setitem__(self, int(episodeNumber), episodeURL)
 
     def remove(self,episodeNumber):
         if episodeNumber is not None:
             try:
-                dict.pop(self, str(episodeNumber))
+                dict.pop(self, int(episodeNumber))
             except KeyError:
                 pass
 
@@ -147,8 +147,6 @@ class Service():
             self._showQueries.append([  ShowNDB.query(ShowNDB.service.IN(showFetcher.showService)),
                                         showFetcher])
 
-            #Cached read example: db.get_multi(q.fetch(keys_only=True))
-
     def updateAllShows(self):
         for service in self._showQueries:
             showsToPut=[]
@@ -252,84 +250,40 @@ class Subscription():
         subscription.put()
 
     @property
-    def subscribedShowsData(self):
-        result=[]
+    def new_episodes(self):
+        result = {'services':{}}
 
-        for show in self.subscribedShows:
+        for subscription in self.subscribedShows:
+            show = subscription.key.parent().get()
 
-            showData=show.key.parent().get()
-
-            if showData is not None:
-                if showData.data is not None:
-                    showResult={'showKey':show.key.urlsafe(),
-                                'service':showData.service,
-                                #'lastChanged':showData.lastChanged,
-                                'title':showData.data["title"],
-                                'season':showData.data["season"],
-                                'posterURL':showData.data["posterURL"],
+            if show is not None:
+                if show.data is not None:
+                    showResult={'showKey':subscription.key.urlsafe(),
+                                'showKeyUnsafe':str(subscription.key),
+                                'title':show.data["title"],
+                                'season':show.data["season"],
+                                'posterURL':show.data["posterURL"],
                                 'episodes':[]}
 
-                    showEpisodes=map(int,showData.data['episodes'].keys())
-                    showEpisodes.sort(reverse=True)
-                    showEpisodes=map(str,showEpisodes)
-
-                    downloadedEpisodes=set(show.downloaded)
-
-
-                    for episode in showEpisodes:
-
-                        episodeIsDownloaded='0'
-
-                        if episode in downloadedEpisodes:
-                            episodeIsDownloaded='1'
-
-                        showResult["episodes"].append({'number':episode,
-                                                       'isDownloaded':episodeIsDownloaded})
-
-                    result.append(showResult)
-            else:
-                show.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
-
-        return result
-
-    @property
-    def newEpisodes(self):
-
-        result={'services':{}}
-
-        for show in self.subscribedShows:
-
-            showData=show.key.parent().get()
-
-            if showData is not None:
-                if showData.data is not None:
-                    showResult={'showKey':show.key.urlsafe(),
-                                'showKeyUnsafe':str(show.key),
-                                'title':showData.data["title"],
-                                'season':showData.data["season"],
-                                'posterURL':showData.data["posterURL"],
-                                'episodes':[]}
-
-                    if showData.data is not None:
-                        showEpisodes=set(showData.data['episodes'].keys())
+                    if show.data is not None:
+                        showEpisodes=set(map(int,show.data['episodes'].keys()))
                     else:
                         showEpisodes=set([])
 
-                    downloadedEpisodes=set(show.downloaded)
+                    downloadedEpisodes=set(subscription.downloaded)
 
                     for newEpisode in (showEpisodes-downloadedEpisodes):
-
                         showResult["episodes"].append({'number':newEpisode,
-                                                        'url':showData.data['episodes'][newEpisode]})
+                                                        'url':show.data['episodes'][str(newEpisode)]})
 
                     try:
-                        result['services'][showData.service]
+                        result['services'][show.service]
                     except KeyError:
-                        result['services'][showData.service]=[]
-
-                    result['services'][showData.service].append(showResult)
+                        result['services'][show.service]=[]
+                    if len(showResult["episodes"]):
+                        result['services'][show.service].append(showResult)
             else:
-                show.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
+                subscription.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
 
         return result
 
@@ -337,7 +291,7 @@ class Subscription():
         subscriptionKey=ndb.Key(urlsafe=showKey)
         subscription=subscriptionKey.get()
         subscriptionSet=set(subscription.downloaded)
-        subscriptionSet.add(episodeNumber)
+        subscriptionSet.add(int(episodeNumber))
         subscription.downloaded=list(subscriptionSet)
         subscription.put()
 
@@ -346,13 +300,11 @@ class Subscription():
         subscription=subscriptionKey.get()
         subscriptionSet=set(subscription.downloaded)
         try:
-            subscriptionSet.remove(episodeNumber)
+            subscriptionSet.remove(int(episodeNumber))
             subscription.downloaded=list(subscriptionSet)
             subscription.put()
         except KeyError:
             pass
-
-
 
 if __name__ == "__main__":
     pass

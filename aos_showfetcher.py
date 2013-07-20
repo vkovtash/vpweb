@@ -66,7 +66,6 @@ class AOSShowFetcher(ShowFetcher):
             logging.error("%s:playlist data not in JSON format  %s for URL %s"%(self._showTitle,playlist_data,playlist_request_url))
             return result
 
-        logging.error('Episodes %s'%playlist)
         if 'episodes' in playlist:
             for episode in playlist["episodes"]:
                 result.append(episodeNumber=playlist["episodes"].index(episode)+1,episodeURL=episode["file"])

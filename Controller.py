@@ -30,7 +30,7 @@ class UpdateShowsJob(webapp2.RequestHandler):
 class UserNewEpisodes(webapp2.RequestHandler):
     def get(self):
         user_subscription = model.Subscription(USER_ID)
-        response = json.dumps({'response':user_subscription.newEpisodes})
+        response = json.dumps({'response':user_subscription.new_episodes})
         self.response.write(response)
 
 
