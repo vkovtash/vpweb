@@ -1,0 +1,25 @@
+<div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+      <span class="brand">ViPaper</span>
+    </div>
+  </div>
+</div>
+<div class="container">
+  <div class="hero-unit">
+  <div class="row-fluid">
+    <div class="span4">
+      <img ng-src="{{show.posterURL}}" class="img-polaroid">
+    </div>
+    <div class="span7 offset1">
+      <h2>{{show.title}}</h2>
+      <p>Season {{show.season}} Episodes {{show.episodes | length}}</p>
+      <div class="row-fluid episodes">
+        <label ng-repeat="episode in show.episodes | orderBy:'id'" class="checkbox span2">
+           <input type="checkbox" ng-model="episode.isDownloaded" ng-click="show.$save()">{{episode.id}}
+        </label>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>

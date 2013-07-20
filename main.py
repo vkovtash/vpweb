@@ -14,19 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import util
-from Controller import *
-
-def main():
-    application = webapp.WSGIApplication([  ('/',UserSubscriprions),
-    										('/addbookmark',AddShow),
-    										('/updateshows',UpdateShowsJob),
-    										('/getnewepisodes',UserNewEpisodes),
-                                            ('/setdownloaded',MarkEpisodeAsDownloaded)],
-                                         debug=True)
-    util.run_wsgi_app(application)
-
-
-if __name__ == '__main__':
-    main()
+import webapp2
+from controller import *
+application = webapp2.WSGIApplication([ webapp2.Route(r'/', handler=MainHandler, name='home'),
+										webapp2.Route(r'/shows', handler=ShowListHandler, name='show-list'),
+										webapp2.Route(r'/shows/<show_id:.+>', handler=ShowHandler, name='show'),
+										webapp2.Route(r'/addbookmark', handler=AddShow, name = 'add-show'),
+										webapp2.Route(r'/updateshows', handler=UpdateShowsJob, name='update-shows'),
+										webapp2.Route(r'/getnewepisodes', handler=UserNewEpisodes, name='new-episodes'),
+                                        webapp2.Route(r'/setdownloaded', handler=MarkEpisodeAsDownloaded, name='mark-downloaded')],
+                                     debug=True)

@@ -1,69 +1,91 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
+import webapp2
+import model
+import json
+import logging
+from aos_showfetcher import AOSShowFetcher
 
-import Model, json, os.path , logging
-from AOSShowFetcher import AOSShowFetcher
-from SORGShowFetcher import SORGShowFetcher
+USER_ID = "aluzar"
+Service = model.Service([AOSShowFetcher])
 
-userName="aluzar"
-Service=Model.Service   ([  AOSShowFetcher,
-                            #SORGShowFetcher
-                        ])
-
-class AddShow(webapp.RequestHandler):
+class AddShow(webapp2.RequestHandler):
     def get(self):
+        url = self.request.get('u')
+        url = url.split("#",1)[0]
+        show_key = Service.registerShow(url)
 
-        url=self.request.get('u')
-        showKey=Service.registerShow(url)
-
-        userSubscription=Model.Subscription(userName)
-        userSubscription.subscribeByShowKey(showKey)
+        userSubscription = model.Subscription(USER_ID)
+        userSubscription.subscribeByShowKey(show_key)
 
     post = get
 
-class UpdateShowsJob(webapp.RequestHandler):
+
+class UpdateShowsJob(webapp2.RequestHandler):
     def get(self):
         Service.updateAllShows()
 
-class UserNewEpisodes(webapp.RequestHandler):
+
+class UserNewEpisodes(webapp2.RequestHandler):
     def get(self):
-        userSubscription=Model.Subscription(userName)
-        response=json.dumps({'response':userSubscription.newEpisodes})
-        self.response.out.write(response)
+        user_subscription = model.Subscription(USER_ID)
+        response = json.dumps({'response':user_subscription.new_episodes})
+        self.response.write(response)
 
-class MarkEpisodeAsDownloaded(webapp.RequestHandler):
+
+class MarkEpisodeAsDownloaded(webapp2.RequestHandler):
     def get(self):
-        episodeNumber=self.request.get('ep_num')
-        showKey=self.request.get('show_key')
-        isDownloaded = self.request.get('is_downloaded')
+        episode_number = self.request.get('ep_num')
+        showKey = self.request.get('show_key')
+        is_downloaded = self.request.get('is_downloaded')
 
-        userSubscription=Model.Subscription(userName)
-        logging.error(isDownloaded)
+        user_subscription = model.Subscription(USER_ID)
+        logging.error(is_downloaded)
 
-        if isDownloaded=='0':
-            userSubscription.markEpisodeAsNotDownloaded(showKey,episodeNumber)
+        if is_downloaded == '0':
+            user_subscription.markEpisodeAsNotDownloaded(showKey,episode_number)
         else:
-            userSubscription.markEpisodeAsDownloaded(showKey,episodeNumber)
+            user_subscription.markEpisodeAsDownloaded(showKey,episode_number)
 
-class UserSubscriprions(webapp.RequestHandler):
+
+class ShowListHandler(webapp2.RequestHandler):
     def get(self):
-        userSubscription=Model.Subscription(userName)
+        def remove_extra_data(show):
+            del show['lastChanged']
+            return show
 
-        showsData=userSubscription.subscribedShowsData
+        user_subscription = model.Subscription(USER_ID)
+        show_list_data = user_subscription.subscription_list
+        show_list_data = sorted(show_list_data, key=lambda k:k['lastChanged'], reverse=True)
+        show_list_data = map(remove_extra_data,show_list_data)
+        show_list = {"Shows":show_list_data}
 
-        #showsData=sorted( showsData, key=lambda k:"".join([k["title"],k["season"].zfill(2)]) )
-        showsData=sorted( showsData, key=lambda k:k["lastChanged"], reverse=True )
-        Tmain_values={
-            "Shows":showsData
-        }
+        self.response.headers['Content-Type'] = 'text/json'
+        self.response.write(json.dumps(show_list))
 
-        path = os.path.join(os.path.dirname(__file__), 'templates/UserSubscriptionData.tpl')
-        self.response.out.write(template.render(path, Tmain_values))
 
-class MainHandler(webapp.RequestHandler):
+class ShowHandler(webapp2.RequestHandler):
+    def get(self, show_id):
+        user_subscription = model.Subscription(USER_ID)
+        subscription_data = user_subscription.subscription_data(show_id)
+        self.response.write(json.dumps(subscription_data))
+
+    def post(self, show_id):
+        request_data = json.loads(self.request.body)
+        episode_numbers = []
+
+        for episode in request_data['episodes']:
+            if episode['isDownloaded']:
+                episode_numbers.append(episode['id'])
+
+        user_subscription = model.Subscription(USER_ID)
+        user_subscription.set_subscription_downloaded_episodes(show_id,episode_numbers)
+
+        self.get(show_id=show_id)
+
+
+class MainHandler(webapp2.RequestHandler):
     def get(self):
-        pass
+        self.redirect('/shows')
 

@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from DbModel import *
-import downloader,re,hashlib,logging
+from dbmodel import *
+import downloader
+import re
+import hashlib
+import logging
 from urlparse import urlparse
 from httplib import HTTPException
 
@@ -17,12 +20,12 @@ class EpisodeList(dict):
 
     def append(self,episodeNumber,episodeURL):
         if episodeNumber is not None:
-            dict.__setitem__(self, str(episodeNumber), episodeURL)
+            dict.__setitem__(self, int(episodeNumber), episodeURL)
 
     def remove(self,episodeNumber):
         if episodeNumber is not None:
             try:
-                dict.pop(self, str(episodeNumber))
+                dict.pop(self, int(episodeNumber))
             except KeyError:
                 pass
 
@@ -36,52 +39,25 @@ class ShowFetcher():
                  "www.dummyservice.org"]
 
     def __init__(self,showURL):
-        self._showURL=showURL
-        self._showPage=None
-        self._showEpisodes=None
-        self._showTitle=None
-        self._showPoster=None
+        self._showURL = showURL
+        self._showPage = None
+        self._showEpisodes = None
+        self._showTitle = None
+        self._showPoster = None
+        self._showSeason = None
 
         if not self.__checkService():
             raise Exception('URL is not in showServices list')
-
-    def getShowPage(self):
-        """
-        Требует оверрайда. В зависимости от типа данных может потребоваться изменить используемый метод
-        """
-        return downloader.HTMLDocGet(self._showURL)
 
     def __checkService(self):
         serviceFromUrl=urlparse(self._showURL).netloc
         validServices=set(self.showService)
         return serviceFromUrl in validServices
 
-    def normalizeTitle(self,title=""):
-
-        showTitle=title.replace(":","")
-        showTitle=showTitle.replace(";","")
-        showTitle=showTitle.replace(",","")
-        showTitle=showTitle.replace(".","")
-        showTitle=showTitle.replace("_"," ")
-        showTitle=re.sub(" +"," ",showTitle)
-        showTitle=re.sub("/"," ",showTitle)
-        showTitle=showTitle.strip()
-
-        return showTitle
-
     @property
     def showPage(self):
         if self._showPage is None:
-            try:
-                self._showPage=self.getShowPage()
-            except HTTPException:
-                logging.error("HTTP exception while getting URL " + self._showURL)
-                self._showPage = None
-                return self._showPage
-
-            if self._showPage.data is None:
-                self._showPage=None
-
+            self._showPage = self.get_show_page(self._showURL)
         return self._showPage
 
     @property
@@ -91,63 +67,76 @@ class ShowFetcher():
     @property
     def showTitle(self):
         """
-        Требует оверрайда. Должно возвращаться нормализованое название
+        Возвращает нормализованое название
         """
-        if self._showTitle is not None:
-            return self._showTitle
-        result=""
-        #=================Add your code here====================
-
-
-        #=======================================================
-
-        result=self.normalizeTitle(result)
-        self._showTitle=result
-        return result
+        if self._showTitle is None:
+            self._showTitle = self.extract_show_title()
+            self._showTitle = self.normalize_title(self._showTitle)
+        return self._showTitle
 
     @property
     def showPoster(self):
         """
-        Требует оверрайда. Должна возвращаться абсолютная ссылка на постер
+        Возвращает абсолютную ссылку на постер
         """
-        if self._showPoster is not None:
-            return self._showPoster
-
-        result=""
-        #=================Add your code here====================
-
-
-        #=======================================================
-        return result
+        if self._showPoster is None:
+            self._showPoster = self.extract_show_poster_url()
+        return self._showPoster
 
     @property
     def showSeason(self):
         """
-        Требует оверрайда. Дожен возвращаться номер сезона
+        Возвращает номер сезона
         """
-        result="1"
-        #=================Add your code here====================
-
-
-        #=======================================================
-        return result
+        if self._showSeason is None:
+            self._showSeason = self.extract_show_season()
+        return self._showSeason
 
     @property
     def showEpisodes(self):
         """
-        Требует оверрайда. Должен заполняться EpisodeList()
+        Возвращает экземпляр класса EpisodeList()
         """
-        if self._showEpisodes is not None:
-            return self._showEpisodes
+        if self._showEpisodes is None:
+            self._showEpisodes = self.extract_show_episodes()
+        return self._showEpisodes
 
-        result=EpisodeList()
-        #=================Add your code here====================
+    def normalize_title(self,title):
+        show_title = title
+        show_title = show_title.replace(":","")
+        show_title = show_title.replace(";","")
+        show_title = show_title.replace(",","")
+        show_title = show_title.replace(".","")
+        show_title = show_title.replace("_"," ")
+        show_title = re.sub(" +"," ",show_title)
+        show_title = re.sub("/"," ",show_title)
+        show_title = show_title.strip()
 
+        return show_title
 
-        #=======================================================
-        self._showEpisodes=result
-        return result
+    def extract_show_title(self):
+        return ""
 
+    def extract_show_poster_url(self):
+        return ""
+
+    def extract_show_season(self):
+        return "1"
+
+    def extract_show_episodes(self):
+        return EpisodeList()
+
+    def get_show_page(self,url):
+        show_page = None
+        try:
+            show_page = downloader.HTMLDocGet(url)
+        except HTTPException:
+            logging.error("HTTP exception while getting URL %s"%url)
+            return None
+
+        if show_page.data is None:
+            return None
+        return show_page
 
 
 class Service():
@@ -157,8 +146,6 @@ class Service():
         for showFetcher in showFetchers:
             self._showQueries.append([  ShowNDB.query(ShowNDB.service.IN(showFetcher.showService)),
                                         showFetcher])
-
-            #Cached read example: db.get_multi(q.fetch(keys_only=True))
 
     def updateAllShows(self):
         for service in self._showQueries:
@@ -208,87 +195,96 @@ class Subscription():
         return ndb.get_multi(self._subscribedShowsQuery.fetch(keys_only=True))
 
     @property
-    def subscribedShowsData(self):
+    def subscription_list(self):
         result=[]
 
-        for show in self.subscribedShows:
-
-            showData=show.key.parent().get()
-
-            if showData is not None:
-                if showData.data is not None:
-                    showResult={'showKey':show.key.urlsafe(),
-                                'service':showData.service,
-                                'lastChanged':showData.lastChanged,
-                                'title':showData.data["title"],
-                                'season':showData.data["season"],
-                                'posterURL':showData.data["posterURL"],
-                                'episodes':[]}
-
-                    if showData.data is not None:
-                        showEpisodes=map(int,showData.data['episodes'].keys())
-                        showEpisodes.sort(reverse=True)
-                        showEpisodes=map(str,showEpisodes)
-                    else:
-                        showEpisodes=[]
-
-                    downloadedEpisodes=set(show.downloaded)
-
-
-                    for episode in showEpisodes:
-
-                        episodeIsDownloaded='0'
-
-                        if episode in downloadedEpisodes:
-                            episodeIsDownloaded='1'
-
-                        showResult["episodes"].append({'number':episode,
-                                                       'isDownloaded':episodeIsDownloaded})
-
+        for subscription in self.subscribedShows:
+            show = subscription.key.parent().get()
+            if show is not None:
+                show_data = show.data
+                if show_data is not None:
+                    showResult={'showKey':subscription.key.urlsafe(),
+                                'service':show.service,
+                                'lastChanged':show.lastChanged,
+                                'title':show_data["title"],
+                                'season':show_data["season"],
+                                'posterURL':show_data["posterURL"],
+                                'showURL':show.url,
+                                'downloadedEpisodes':len(subscription.downloaded),
+                                'totalEpisodes':len(show_data['episodes'])
+                                }
                     result.append(showResult)
             else:
-                show.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
+                subscription.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
 
         return result
 
+    def subscription_data(self,show_key):
+        subscription_key = ndb.Key(urlsafe=show_key)
+        subscription = subscription_key.get()
+        show = subscription.key.parent().get()
+        show_data = show.data
+        show_data['showId'] = show_key
+        show_data['showURL'] = show.url
+        if show_data is not None:
+            downloaded_episodes=set(subscription.downloaded)
+            episode_list = []
+            for episode_key in show_data['episodes'].keys():
+                episode_id = int(episode_key)
+                episode_data = {'id':episode_id}
+
+                if episode_id in downloaded_episodes:
+                    episode_data['isDownloaded'] = True
+                else:
+                    episode_data['isDownloaded'] = False
+
+                episode_list.append(episode_data)
+            show_data['episodes'] = episode_list
+
+        return show_data
+
+    def set_subscription_downloaded_episodes(self,show_key,episode_numbers=[]):
+        subscription_key = ndb.Key(urlsafe=show_key)
+        subscription = subscription_key.get()
+        subscription_set = set(episode_numbers)
+        subscription.downloaded = list(subscription_set)
+        subscription.put()
+
     @property
-    def newEpisodes(self):
+    def new_episodes(self):
+        result = {'services':{}}
 
-        result={'services':{}}
+        for subscription in self.subscribedShows:
+            show = subscription.key.parent().get()
 
-        for show in self.subscribedShows:
-
-            showData=show.key.parent().get()
-
-            if showData is not None:
-                if showData.data is not None:
-                    showResult={'showKey':show.key.urlsafe(),
-                                'showKeyUnsafe':str(show.key),
-                                'title':showData.data["title"],
-                                'season':showData.data["season"],
-                                'posterURL':showData.data["posterURL"],
+            if show is not None:
+                if show.data is not None:
+                    showResult={'showKey':subscription.key.urlsafe(),
+                                'showKeyUnsafe':str(subscription.key),
+                                'title':show.data["title"],
+                                'season':show.data["season"],
+                                'posterURL':show.data["posterURL"],
                                 'episodes':[]}
 
-                    if showData.data is not None:
-                        showEpisodes=set(showData.data['episodes'].keys())
+                    if show.data is not None:
+                        showEpisodes=set(map(int,show.data['episodes'].keys()))
                     else:
                         showEpisodes=set([])
 
-                    downloadedEpisodes=set(show.downloaded)
+                    downloadedEpisodes=set(subscription.downloaded)
 
                     for newEpisode in (showEpisodes-downloadedEpisodes):
-
                         showResult["episodes"].append({'number':newEpisode,
-                                                        'url':showData.data['episodes'][newEpisode]})
+                                                        'url':show.data['episodes'][str(newEpisode)]})
 
                     try:
-                        result['services'][showData.service]
+                        result['services'][show.service]
                     except KeyError:
-                        result['services'][showData.service]=[]
-
-                    result['services'][showData.service].append(showResult)
+                        result['services'][show.service]=[]
+                    if len(showResult["episodes"]):
+                        result['services'][show.service].append(showResult)
             else:
-                show.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
+                subscription.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
 
         return result
 
@@ -296,7 +292,7 @@ class Subscription():
         subscriptionKey=ndb.Key(urlsafe=showKey)
         subscription=subscriptionKey.get()
         subscriptionSet=set(subscription.downloaded)
-        subscriptionSet.add(episodeNumber)
+        subscriptionSet.add(int(episodeNumber))
         subscription.downloaded=list(subscriptionSet)
         subscription.put()
 
@@ -305,13 +301,11 @@ class Subscription():
         subscription=subscriptionKey.get()
         subscriptionSet=set(subscription.downloaded)
         try:
-            subscriptionSet.remove(episodeNumber)
+            subscriptionSet.remove(int(episodeNumber))
             subscription.downloaded=list(subscriptionSet)
             subscription.put()
         except KeyError:
             pass
-
-
 
 if __name__ == "__main__":
     pass
