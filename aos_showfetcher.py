@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import downloader,re,json, logging, time
-from Model import *
+import downloader
+import re
+import json
+import logging
+from model import ShowFetcher, EpisodeList
 
 class AOSShowFetcher(ShowFetcher):
     showService=["animeonline.su"]
@@ -58,12 +61,14 @@ class AOSShowFetcher(ShowFetcher):
 
         #Загрузка плэйлиста в словарь
         try:
-            playlist=json.loads(playlist_data ) 
+            playlist = json.loads(playlist_data ) 
         except ValueError:
             logging.error("%s:playlist data not in JSON format  %s for URL %s"%(self._showTitle,playlist_data,playlist_request_url))
             return result
 
-        for episode in playlist["episodes"]:
-            result.append(episodeNumber=playlist["episodes"].index(episode)+1,episodeURL=episode["file"])
+        logging.error('Episodes %s'%playlist)
+        if 'episodes' in playlist:
+            for episode in playlist["episodes"]:
+                result.append(episodeNumber=playlist["episodes"].index(episode)+1,episodeURL=episode["file"])
 
         return result

@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 import webapp2
-from Controller import *
+from controller import *
 application = webapp2.WSGIApplication([ webapp2.Route(r'/', handler=MainHandler, name='home'),
 										webapp2.Route(r'/shows', handler=ShowListHandler, name='show-list'),
 										webapp2.Route(r'/shows/<show_id:.+>', handler=ShowHandler, name='show'),

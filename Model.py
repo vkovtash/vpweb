@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from DbModel import *
+from dbmodel import *
 import downloader
 import re
 import hashlib
