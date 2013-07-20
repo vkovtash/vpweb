@@ -5,17 +5,36 @@ body {
 }
 
 ul.shows .thumbnail{
-  height: 150px;
+  height: 120px;
+  margin-top: 15px; 
 }
 
-.show-li-thumb {
+.show-card-thumb {
   float: left;
   height: 150px;
   max-width: 150px;
   padding-right: 1em;
 }
 
-.show-li-thumb img{
+.show-card-thumb img{
   height: 150px;
   max-width: 100px;
+}
+
+.show-card .progress{
+  height: 10px;
+}
+
+.show-cars-thumb-group {
+    position: relative;
+    margin: 0 auto;
+    display: table;
+    margin-top: -15px;
+    margin-left: -5px;
+}
+
+.show-cars-thumb-group .badge{
+  position: absolute;      
+  bottom: 2px;
+  right: 2px;
 }

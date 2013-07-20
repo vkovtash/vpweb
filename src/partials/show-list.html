@@ -10,10 +10,18 @@
     <div class="span10 offset1">
       <ul class="shows thumbnails">
         <li ng-repeat="show in shows" class="span5">
-            <div class="thumbnail">
-            <a href="#/shows/{{show.showKey}}" class="show-li-thumb"><img ng-src="{{show.posterURL}}"></a>
-            <a href="#/shows/{{show.showKey}}" class="show-li-title"><h4>{{show.title}}</h4></a>
-            <p>Season {{show.season}}</p>
+            <div class="thumbnail show-card">
+              <a href="#/shows/{{show.showKey}}" class="show-card-thumb">
+              <div class='show-cars-thumb-group'>
+                <img ng-src="{{show.posterURL}}" class="img-polaroid">
+                <span class="badge badge-warning">{{show.totalEpisodes}}</span>
+              </div>
+              </a>
+              <a href="#/shows/{{show.showKey}}" class="show-card-title"><h4>{{show.title}}</h4></a>
+              <p>Season {{show.season}}</p>
+              <div class="progress progress-success ">
+                <div class="bar" style="width: {{show.downloadedEpisodes/show.totalEpisodes*100}}%;"></div>
+              </div>
             </div>  
         </li>
       </ul>

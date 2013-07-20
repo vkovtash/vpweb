@@ -200,19 +200,23 @@ class Subscription():
     def subscription_list(self):
         result=[]
 
-        for show in self.subscribedShows:
-            showData=show.key.parent().get()
-            if showData is not None:
-                if showData.data is not None:
-                    showResult={'showKey':show.key.urlsafe(),
-                                'service':showData.service,
-                                'lastChanged':showData.lastChanged,
-                                'title':showData.data["title"],
-                                'season':showData.data["season"],
-                                'posterURL':showData.data["posterURL"]}
+        for subscription in self.subscribedShows:
+            show = subscription.key.parent().get()
+            if show is not None:
+                show_data = show.data
+                if show_data is not None:
+                    showResult={'showKey':subscription.key.urlsafe(),
+                                'service':show.service,
+                                'lastChanged':show.lastChanged,
+                                'title':show_data["title"],
+                                'season':show_data["season"],
+                                'posterURL':show_data["posterURL"],
+                                'downloadedEpisodes':len(subscription.downloaded),
+                                'totalEpisodes':len(show_data['episodes'])
+                                }
                     result.append(showResult)
             else:
-                show.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
+                subscription.key.delete() #Удаляем подписку пользователя, если она ссылается на удаленную запись в Shows
 
         return result
 
