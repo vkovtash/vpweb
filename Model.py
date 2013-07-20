@@ -209,6 +209,7 @@ class Subscription():
                                 'title':show_data["title"],
                                 'season':show_data["season"],
                                 'posterURL':show_data["posterURL"],
+                                'showURL':show.url,
                                 'downloadedEpisodes':len(subscription.downloaded),
                                 'totalEpisodes':len(show_data['episodes'])
                                 }
@@ -223,14 +224,14 @@ class Subscription():
         subscription = subscription_key.get()
         show = subscription.key.parent().get()
         show_data = show.data
-        show_data["showId"] = show_key;
+        show_data['showId'] = show_key
+        show_data['showURL'] = show.url
         if show_data is not None:
             downloaded_episodes=set(subscription.downloaded)
             episode_list = []
             for episode_key in show_data['episodes'].keys():
                 episode_id = int(episode_key)
-                episode_url = show_data['episodes'][episode_key]
-                episode_data = {'url':episode_url,'id':episode_id}
+                episode_data = {'id':episode_id}
 
                 if episode_id in downloaded_episodes:
                     episode_data['isDownloaded'] = True
