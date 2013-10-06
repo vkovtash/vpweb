@@ -62,15 +62,27 @@ class AOSShowFetcher(ShowFetcher):
         try:
             playlist = json.loads(playlist_data ) 
         except ValueError:
-            logging.error("%s:playlist data not in JSON format  %s for URL %s"%(self._showTitle,playlist_data,playlist_request_url))
+            logging.error("%s:playlist data not in JSON format  %s for URL %s"%(self._showTitle, playlist_data, playlist_request_url))
             return result
            
         if 'episodes' in playlist:
             for episode in playlist["episodes"]:
+                
+                episode_id = playlist["episodes"].index(episode) + 1
+                
                 try:
-                    # Quick fix for new playlist format. Hardcoded watching for sub version of videos.
-                    result.append(episodeNumber=playlist["episodes"].index(episode) + 1, episodeURL=episode["sub"]["m"])
+                    # Quick fix for new playlist format. Subtitle version preffered
+                    if "sub" in episode:
+                        result.append(episodeNumber = episode_id, episodeURL=episode["sub"]["m"])
+                    elif "rus" in episode:
+                        logging.info(u"%s: There is no subtitle version of episode %s. Fallback to russsian version."%(self._showTitle, episode_id))
+                        result.append(episodeNumber = episode_id, episodeURL=episode["rus"]["m"])
+                    elif "file" in episode:
+                        logging.info(u"%s: Old style format for episode %s."%(self._showTitle, episode_id))
+                        result.append(episodeNumber = episode_id, episodeURL=episode["file"])
+                    else:
+                        logging.error(u"%s: Can't parse episode %s"%(self._showTitle, episode))
                 except KeyError:
-                    logging.exception(u"Can't parse playlist %s", playlist)
+                    logging.error(u"%s: Can't parse episode %s"%(self._showTitle, episode))
 
         return result
