@@ -55,7 +55,6 @@ class AOSShowFetcher(ShowFetcher):
             logging.error("%s :bad playlist URL %s",(self._showTitle,playlist_request_url))
             return result
 
-
         if playlist_data   is None:
             return result
 
@@ -65,9 +64,13 @@ class AOSShowFetcher(ShowFetcher):
         except ValueError:
             logging.error("%s:playlist data not in JSON format  %s for URL %s"%(self._showTitle,playlist_data,playlist_request_url))
             return result
-
+           
         if 'episodes' in playlist:
             for episode in playlist["episodes"]:
-                result.append(episodeNumber=playlist["episodes"].index(episode)+1,episodeURL=episode["file"])
+                try:
+                    # Quick fix for new playlist format. Hardcoded watching for sub version of videos.
+                    result.append(episodeNumber=playlist["episodes"].index(episode) + 1, episodeURL=episode["sub"]["m"])
+                except KeyError:
+                    logging.exception(u"Can't parse playlist %s", playlist)
 
         return result
